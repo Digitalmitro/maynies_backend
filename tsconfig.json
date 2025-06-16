@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020", // ya jo Node version support karta ho
+    "module": "CommonJS",
+    "rootDir": "src", // aapka source folder
+    "outDir": "dist", // build ke baad yahan files aayengi
+    "strict": true, // strict type-checking
+    "esModuleInterop": true, // import syntax compatibility
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": [
+      "src/types",
+      "node_modules/@types"
+    ]
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
