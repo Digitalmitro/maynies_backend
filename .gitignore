@@ -1,0 +1,48 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Logs
+logs
+*.log
+*.log*
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+.eslintcache
+.node_repl_history
+
+# Environment variables
+.env
+.env*
+
+# Build output
+dist
+build
+.cache
+.parcel-cache
+.next
+out
+.nuxt
+.serverless
+
+# Coverage reports
+coverage
+*.lcov
+.nyc_output
+
+# Testing
+.vscode-test
+
+# Various
+*.tgz
+.yarn-integrity
+.fusebox
+.dynamodb
+.tern-port
