@@ -1,12 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
+import { BaseError } from '../../../shared/utils/baseError';
+import { sendResponse } from '../../../shared/utils/sendResponse';
 
 export class AuthController {
 
     async register(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await authService.register(req.body, req);
-            res.status(201).json(result);
+            sendResponse({
+                res,
+                statusCode: 201,
+                msg: 'User registered successfully',
+                data: result
+            })
         } catch (err) {
             next(err);
         }
@@ -15,7 +22,12 @@ export class AuthController {
     async verifyOTP(req: Request, res: Response, next: NextFunction) {
         try {
             const result = await authService.verifyOtp(req.body, res, req);
-            res.status(201).json(result);
+            sendResponse({
+                res,
+                statusCode: 201,
+                msg: 'OTP verified successfully',
+                data: result
+            });
         } catch (err) {
             next(err);
         }
@@ -26,8 +38,13 @@ export class AuthController {
         try {
             const { email, password } = req.body;
             // const ip = req.ip;
-            const result = await authService.login(email, password, "112245", res);
-            res.json(result); // { message: 'Logged in successfully' }
+            const result = await authService.login(email, password, req.ip || "", res);
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'Logged in successfully',
+                data: result
+            });
         } catch (err) {
             next(err);
         }
@@ -38,10 +55,15 @@ export class AuthController {
         try {
             const plainToken = req.cookies.refreshToken;
             if (!plainToken) {
-                res.status(401).json({ message: 'No refresh token' });
+                throw new BaseError('No refresh token', 401);
             }
-            await authService.refreshTokens(plainToken, "1122343", res);
-            res.json({ message: 'Tokens refreshed' });
+            await authService.refreshTokens(plainToken, req.ip || "", res);
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'Tokens refreshed successfully',
+                data: {}
+            });
         } catch (err) {
             next(err);
         }
@@ -51,7 +73,12 @@ export class AuthController {
         try {
             const { email } = req.body;
             const result = await authService.sendForgotPasswordOtp(email);
-            res.json(result);
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'OTP sent to your email',
+                data: result
+            });
         } catch (err) {
             next(err);
         }
@@ -62,7 +89,12 @@ export class AuthController {
         try {
             const { email, otp } = req.body;
             const result = await authService.verifyResetOtp(email, otp);
-            res.json(result);
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'OTP verified successfully',
+                data: result
+            });
         } catch (err) {
             next(err);
         }
@@ -73,7 +105,12 @@ export class AuthController {
         try {
             const { email, newPassword } = req.body;
             const result = await authService.setNewPassword(email, newPassword);
-            res.json(result);
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'Password reset successfully',
+                data: result
+            });
         } catch (err) {
             next(err);
         }
@@ -87,7 +124,12 @@ export class AuthController {
             }
             res.clearCookie('accessToken');
             res.clearCookie('refreshToken');
-            res.json({ message: 'Logged out successfully' });
+            sendResponse({
+                res,
+                statusCode: 200,
+                msg: 'Logged out successfully',
+                data: {}
+            });
         } catch (err) {
             next(err);
         }

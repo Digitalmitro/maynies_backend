@@ -20,6 +20,7 @@ import { RefreshTokenModel } from '../models/refreshToken.model';
 import { Response } from 'express';
 import { errorMonitor } from 'stream';
 import { UserProfileModel } from '../../user/models/userProfile.model';
+import { BaseError } from '../../../shared/utils/baseError';
 
 
 class AuthService {
@@ -34,13 +35,16 @@ class AuthService {
     async register(payload: IRegisterPayload, req: Request): Promise<IRegisterResult> {
 
         const { name, email, password, role } = payload;
-        const roleDoc = await RoleModel.findOne({ name: role });
 
-        if (await this.userService.findByEmail(email)) {
-            throw new Error('User with this email already exists');
+        const existingUser = await this.userService.findByEmail(email);
+        if (existingUser) {
+            throw new BaseError('User with this email already exists.', 409); // 409 Conflict
         }
 
-        if (!roleDoc) throw new Error('Invalid role');
+        const roleDoc = await RoleModel.findOne({ name: role });
+        if (!roleDoc) {
+            throw new BaseError('Invalid role provided.', 400); // 400 Bad Request
+        }
 
         // 1. Hash password
         const passwordHash = await bcrypt.hash(password, 10);
@@ -51,13 +55,11 @@ class AuthService {
             email,
             passwordHash,
             roleId: roleDoc._id as Types.ObjectId,
+            roleName: roleDoc.name as string
         });
 
 
         const otpWindowStart = new Date(Date.now() - 10 * 60 * 1000);
-
-
-
         const recentOtps = await OtpModel.countDocuments({
             user_id: user._id,
             type: 'email_verification',
@@ -65,7 +67,7 @@ class AuthService {
         });
 
         if (recentOtps >= 5) {
-            throw new Error('Too many OTP requests. Please wait before trying again.');
+            throw new BaseError('Too many OTP requests. Please wait before trying again.', 401);
         }
 
         // 3. Cleanup any previous unused OTPs
@@ -174,7 +176,7 @@ class AuthService {
 
         // 2. Find user
         const user = await this.userService.findByEmail(email);
-        if (!user) throw new Error('Invalid email');
+        if (!user) throw new BaseError('Invalid email', 400); // 400 Bad Request
 
         // 3. Fetch latest unused OTP
         const otpDoc = await OtpModel.findOne({
@@ -186,14 +188,14 @@ class AuthService {
             .exec();
 
         if (!otpDoc) {
-            throw new Error('OTP not found or expired');
+            throw new BaseError('OTP not found or expired', 404); // 404 Not Found
         }
 
         // 4. Compare OTP
         const isMatch = await bcrypt.compare(otp, otpDoc.otp_hash);
 
         if (!isMatch) {
-            throw new Error('Invalid OTP');
+            throw new BaseError('Invalid OTP', 401); // 401 Unauthorized
         }
 
         // 5. Mark OTP as used
@@ -300,7 +302,7 @@ class AuthService {
             }
         }
 
-        if (!matchedToken) throw new Error('Invalid or expired refresh token');
+        if (!matchedToken) throw new BaseError('Invalid or expired refresh token', 401); // 401 Unauthorized
 
         // 3. Revoke old token
         await RefreshTokenModel.updateOne(
@@ -318,7 +320,7 @@ class AuthService {
         const newHash = await bcrypt.hash(newPlain, 10);
         const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // example: 7 days
 
-        const newTokenDoc = await RefreshTokenModel.create({
+        await RefreshTokenModel.create({
             user_id: matchedToken.user_id,
             token_hash: newHash,
             expires_at: newExpires,
@@ -367,7 +369,7 @@ class AuthService {
                 break;
             }
         }
-        if (!tokenDoc) throw new Error('Invalid refresh token');
+        if (!tokenDoc) throw new BaseError('Invalid refresh token', 401); // 401 Unauthorized
 
         // 2. Mark revoked
         tokenDoc.revoked_at = new Date();
@@ -378,7 +380,7 @@ class AuthService {
 
     async sendForgotPasswordOtp(email: string): Promise<{ message: string; otp?: string }> {
         const user = await this.userService.findByEmail(email);
-        if (!user) throw new Error('No user found with this email');
+        if (!user) throw new BaseError('No user found with this email', 404); // 404 Not Found
 
         // 1. Cleanup any old unused password_reset OTPs
         await OtpModel.deleteMany({
@@ -420,17 +422,17 @@ class AuthService {
             expires_at: { $gt: new Date() }
         }).sort({ created_at: -1 });
 
-        if (!otpDoc) throw new Error('OTP expired or not found');
+        if (!otpDoc) throw new BaseError('OTP expired or not found', 404); // 404 Not Found
 
         const isMatch = await bcrypt.compare(otp, otpDoc.otp_hash);
-        if (!isMatch) throw new Error('Invalid OTP');
+        if (!isMatch) throw new BaseError('Invalid OTP', 401); // 401 Unauthorized
 
         return { success: true };
     }
 
     async setNewPassword(email: string, newPassword: string): Promise<{ message: string }> {
         const user = await this.userService.findByEmail(email);
-        if (!user) throw new Error('User not found');
+        if (!user) throw new BaseError('User not found', 404); // 404 Not Found
 
         const otpDoc = await OtpModel.findOne({
             user_id: user._id,
@@ -439,7 +441,7 @@ class AuthService {
             expires_at: { $gt: new Date() }
         }).sort({ created_at: -1 });
 
-        if (!otpDoc) throw new Error('OTP session expired');
+        if (!otpDoc) throw new BaseError('OTP session expired', 404); // 404 Not Found
 
         // Mark OTP as used
         otpDoc.used_at = new Date();

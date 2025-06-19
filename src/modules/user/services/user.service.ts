@@ -4,6 +4,7 @@ import { IUser, UserDoc } from '../types';
 import { UserModel } from '../models/user.modal';
 import { UserProfileModel } from '../models/userProfile.model';
 import { UserRoleModel } from '../models/userRole.model';
+import { EmployeeProfileModel } from '../../crm/models/employer.model';
 
 export class UserService {
     /**
@@ -14,34 +15,63 @@ export class UserService {
         email: string;
         passwordHash: string;
         roleId: Types.ObjectId;
-
+        roleName?: string; // optional, for future use
     }): Promise<UserDoc> {
-        // 1. Create user
-        const user = await UserModel.create({
-            email: input.email,
-            password_hash: input.passwordHash,
-            is_active: false,
-        });
+        const session = await UserModel.startSession();
+        session.startTransaction();
 
+        try {
+            // 1. Create user
+            const user = await UserModel.create([{
+                email: input.email,
+                password_hash: input.passwordHash,
+                is_active: false,
+            }], { session });
 
+            const [firstName, ...rest] = input.name.trim().split(" ");
+            const lastName = rest.join(" ") || "";
 
-        // 2. Create profile
-        await UserProfileModel.create({
-            user_id: user._id,
-            first_name: input.name.split(" ")[0],
-            last_name: input.name.split(" ")[1],
-        });
+            // 2. Create profile
+            await UserProfileModel.create([{
+                user_id: user[0]._id,
+                first_name: firstName,
+                last_name: lastName,
+            }], { session });
 
+            // ✅ 3. Conditionally create role-based profile
+            if (input.roleName === 'employer') {
+                await EmployeeProfileModel.create([{
+                    user_id: user[0]._id,
+                }], { session });
+            }
 
-        // 3. Assign role via mapping table
-        await UserRoleModel.create({
-            user_id: user._id,
-            role_id: input.roleId,
-        });
-        console.log(user);
-        // 4. Return plain IUser
-        return user as UserDoc;
+            if (input.roleName === 'student') {
+                // await StudentProfileModel.create([{
+                //     user_id: user[0]._id,
+                // }], { session });
+            }
+
+            // 4. Assign role
+            await UserRoleModel.create([{
+                user_id: user[0]._id,
+                role_id: input.roleId,
+            }], { session });
+
+            await session.commitTransaction();
+            session.endSession();
+
+            // console.log("✅ User created:", user[0]._id.toString());
+
+            return user[0] as UserDoc;
+
+        } catch (err) {
+            await session.abortTransaction();
+            session.endSession();
+            console.error("❌ User creation failed:", err);
+            throw err;
+        }
     }
+
 
     /**
      * Finds a user by email.

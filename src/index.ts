@@ -5,7 +5,9 @@ import { connectDB } from './shared/database/connect';
 import authRoutes from './modules/auth/routes/auth.route';
 import userRoutes from './modules/user/routes/user.route';
 import jobRoutes from './modules/job/routes/job.route';
+import crmRoutes from './modules/crm/routes/crm.routes';
 import { seedRoles } from './scripts/seedRoles';
+import { errorHandler } from './shared/middleware/errorMiddleWare';
 // import rateLimit from 'express-rate-limit';
 
 
@@ -30,12 +32,15 @@ async function start() {
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
     app.use('/api/jobs', jobRoutes);
+    app.use('/api/employer', crmRoutes);
 
 
     app.get('/health', (req: Request, res: Response) => {
         res.status(200).json({ status: 'OK', message: 'Server is healthy!' });
     });
 
+
+    app.use(errorHandler); // always at the end
 
 
     const PORT = process.env.PORT || 4000;
