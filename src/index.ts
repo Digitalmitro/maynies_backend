@@ -5,7 +5,7 @@ import { connectDB } from './shared/database/connect';
 import authRoutes from './modules/auth/routes/auth.route';
 import userRoutes from './modules/user/routes/user.route';
 import { seedRoles } from './scripts/seedRoles';
-
+import cors from 'cors';
 
 async function start() {
 
@@ -13,14 +13,22 @@ async function start() {
     await connectDB();
     await seedRoles();
 
+
+
     // 2) Express init
     const app = express();
+    app.use(cors({
+        origin: 'http://localhost:5173', 
+        credentials: true              
+      }));
     app.use(express.json());
     app.use(cookieParser());
 
     // 3) Simple health-check route
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
+
+
 
 
     app.get('/health', (req: Request, res: Response) => {
