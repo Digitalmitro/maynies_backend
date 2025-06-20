@@ -13,10 +13,24 @@ export class EmployerController {
 
             if (!profile) {
                 res.status(404).json({ message: 'Employer profile not found' });
-                return;
+
             }
 
             res.json({ status: 'SUCCESS', data: profile });
+
+        } catch (err) {
+            next(err);
+        }
+    }
+
+    async updateOwnProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const userId = req?.user?.user?._id;
+            const updates = req.body; // ✅ already validated via Zod
+
+            const result = await employerService.updateCombinedProfile(userId, updates);
+
+            res.status(200).json({ status: 'SUCCESS', data: result });
         } catch (err) {
             next(err);
         }

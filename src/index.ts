@@ -8,6 +8,7 @@ import jobRoutes from './modules/job/routes/job.route';
 import crmRoutes from './modules/crm/routes/crm.routes';
 import { seedRoles } from './scripts/seedRoles';
 import { errorHandler } from './shared/middleware/errorMiddleWare';
+import cors from 'cors';
 // import rateLimit from 'express-rate-limit';
 
 
@@ -24,7 +25,13 @@ async function start() {
     const app = express();
 
     app.set('trust proxy', true);
-
+    // app.use(rateLimit({
+    //     windowMs: 15 * 60 * 1000, // 15 minutes
+    //     max: 100, // Limit each IP to 100 requests per windowMs      
+    app.use(cors({
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        credentials: true, // Allow cookies to be sent with requests
+    }));
     app.use(express.json());
     app.use(cookieParser());
 
