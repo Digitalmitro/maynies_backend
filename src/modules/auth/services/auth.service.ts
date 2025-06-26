@@ -41,10 +41,35 @@ class AuthService {
             throw new BaseError('User with this email already exists.', 409); // 409 Conflict
         }
 
-        const roleDoc = await RoleModel.findOne({ name: role });
-        if (!roleDoc) {
-            throw new BaseError('Invalid role provided.', 400); // 400 Bad Request
+
+
+
+        const adminRoleDoc = await RoleModel.findOne({ name: 'admin' });
+        if (!adminRoleDoc) throw new BaseError('Admin role not found', 500);
+
+        const hasAdmin = await UserRoleModel.exists({ role_id: adminRoleDoc._id });
+
+
+        let finalRoleName = null;
+
+
+        if (!hasAdmin) {
+            finalRoleName = 'admin';
+        } else {
+            if (!['student', 'employer'].includes(role)) {
+                throw new BaseError('Invalid role. Only student or employer allowed.', 400);
+            }
+            finalRoleName = role;
         }
+
+
+        const roleDoc = await RoleModel.findOne({ name: finalRoleName });
+        if (!roleDoc) {
+            throw new BaseError('Invalid role provided.', 400);
+        }
+
+
+
 
         // 1. Hash password
         const passwordHash = await bcrypt.hash(password, 10);

@@ -1,24 +1,27 @@
-
 import { Request, Response, NextFunction } from 'express';
 
 export function requireRole(...allowedRoles: string[]) {
-    return function (req: Request, res: Response, next: NextFunction) {
-        const userRole = req?.user?.roles?.[0]?.name;
+    return function (req: Request & { user?: any }, res: Response, next: NextFunction) {
+        const userRoles = req?.user?.roles ?? [];
 
-        console.log('User role:', userRole);
-
-        if (!userRole) {
-            res.status(401).json({ message: 'Unauthorized: Role not found' });
-            return;
-        }
-
-        if (allowedRoles.includes(userRole)) {
-            next(); // ✅ if allowed, move forward
+        if (!Array.isArray(userRoles) || userRoles.length === 0) {
+            res.status(401).json({ message: 'Unauthorized: No roles found' });
             return
         }
 
-        res.status(403).json({
-            message: 'Forbidden: You do not have access to this resource'
-        });
+        const roleNames = userRoles.map((r: any) => r.name?.trim());
+
+        const isAllowed = allowedRoles.some(role => roleNames.includes(role));
+
+        if (!isAllowed) {
+            res.status(403).json({
+                message: 'Forbidden: You do not have access to this resource',
+            });
+
+            return;
+        }
+
+        // ✅ authorized
+        next();
     };
 }

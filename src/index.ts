@@ -6,10 +6,12 @@ import authRoutes from './modules/auth/routes/auth.route';
 import userRoutes from './modules/user/routes/user.route';
 import jobRoutes from './modules/job/routes/job.route';
 import crmRoutes from './modules/crm/routes/crm.routes';
+import uploadRoutes from './modules/upload/routes/upload.route';
+import courseRoutes from './modules/courses/routes/course.route';
 import { seedRoles } from './scripts/seedRoles';
 import { errorHandler } from './shared/middleware/errorMiddleWare';
 import cors from 'cors';
-// import rateLimit from 'express-rate-limit';
+import path from 'path';
 
 
 
@@ -25,9 +27,8 @@ async function start() {
     const app = express();
 
     app.set('trust proxy', true);
-    // app.use(rateLimit({
-    //     windowMs: 15 * 60 * 1000, // 15 minutes
-    //     max: 100, // Limit each IP to 100 requests per windowMs      
+
+
     app.use(cors({
         origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
         credentials: true, // Allow cookies to be sent with requests
@@ -35,17 +36,31 @@ async function start() {
     app.use(express.json());
     app.use(cookieParser());
 
+    app.use('/api/uploads', express.static(path.join(__dirname, '../uploads'), {
+        index: false
+    }));
+
+
+
     // 3) Simple health-check route
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
     app.use('/api/jobs', jobRoutes);
     app.use('/api/employer', crmRoutes);
+    app.use('/api/courses', courseRoutes);
+    app.use('/api/upload', uploadRoutes);
 
 
     app.get('/health', (req: Request, res: Response) => {
         res.status(200).json({ status: 'OK', message: 'Server is healthy!' });
     });
 
+    app.use((req, res, next) => {
+        res.status(404).json({
+            status: 'error',
+            message: 'Route not found'
+        });
+    });
 
     app.use(errorHandler); // always at the end
 

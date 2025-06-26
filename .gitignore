@@ -46,3 +46,6 @@ coverage
 .fusebox
 .dynamodb
 .tern-port
+
+# internal directories
+src/uploads

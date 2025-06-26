@@ -13,6 +13,8 @@ interface GetJobsQuery {
     job_type?: 'full-time' | 'part-time' | 'internship';
     page?: number;
     limit?: number;
+    category?: string;
+    experience?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
 }
@@ -25,6 +27,8 @@ export class JobService {
             search = '',
             location,
             job_type,
+            category,
+            experience, // 👈 expected as number (e.g., ?experience=2)
             page = 1,
             limit = 10,
             sortBy = 'created_at',
@@ -35,6 +39,8 @@ export class JobService {
 
         if (location) filter.location = location;
         if (job_type) filter.job_type = job_type;
+        if (category) filter.category = category;
+        if (experience) filter.experience_years = { $gte: Number(experience) };
 
         if (search) {
             filter.$or = [
@@ -43,7 +49,6 @@ export class JobService {
                 { short_description: new RegExp(search, 'i') }
             ];
         }
-
         const skip = (Number(page) - 1) * Number(limit);
 
         const [jobs, total] = await Promise.all([
@@ -81,8 +86,8 @@ export class JobService {
         } = payload;
 
         // 🚫 1. Role check
-        if (!['admin', 'employer'].includes(user.role)) {
-            throw new Error('Unauthorized role to post job');
+        if (user.role !== 'admin') {
+            throw new Error('Only admin is authorized to post jobs');
         }
 
         // 🚫 2. Required field check
@@ -282,7 +287,7 @@ export class JobService {
             if (!job) {
                 throw new Error(`[Step 1] Job not found for ID: ${jobId}`);
             }
-
+            console.log(userRole)
             // ✅ Step 2: Permission check
             const isAdmin = userRole === 'admin';
             const isOwner = job.posted_by.toString() === userId.toString();
@@ -304,7 +309,7 @@ export class JobService {
                     .limit(limit),
                 JobApplicationModel.countDocuments({ job_id })
             ]);
-            // console.log(`application`, applications);
+            console.log(`application`, applications);
 
             return {
                 data: applications,

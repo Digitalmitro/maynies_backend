@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 export class JobController {
 
 
+
     async getAllJobs(req: Request, res: Response, next: NextFunction) {
         try {
             const data = await jobService.getAllJobs(req.query);
@@ -258,5 +259,7 @@ export class JobController {
         }
     }
 }
+
+
 // 👇 Instantiate and export
 export const jobController = new JobController();

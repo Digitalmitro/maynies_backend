@@ -39,7 +39,7 @@ export class UserService {
             }], { session });
 
             // ✅ 3. Conditionally create role-based profile
-            if (input.roleName === 'employer') {
+            if (input.roleName && input.roleName === 'employer') {
                 await EmployeeProfileModel.create([{
                     user_id: user[0]._id,
                 }], { session });
