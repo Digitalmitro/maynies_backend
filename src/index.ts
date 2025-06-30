@@ -8,6 +8,7 @@ import jobRoutes from './modules/job/routes/job.route';
 import crmRoutes from './modules/crm/routes/crm.routes';
 import uploadRoutes from './modules/upload/routes/upload.route';
 import courseRoutes from './modules/courses/routes/course.route';
+import paymentRoutes from './modules/courses/routes/coursePayment.route';
 import { seedRoles } from './scripts/seedRoles';
 import { errorHandler } from './shared/middleware/errorMiddleWare';
 import cors from 'cors';
@@ -33,6 +34,8 @@ async function start() {
         origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
         credentials: true, // Allow cookies to be sent with requests
     }));
+
+    app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
     app.use(express.json());
     app.use(cookieParser());
 
@@ -48,6 +51,7 @@ async function start() {
     app.use('/api/jobs', jobRoutes);
     app.use('/api/employer', crmRoutes);
     app.use('/api/courses', courseRoutes);
+    app.use('/api/payment', paymentRoutes);
     app.use('/api/upload', uploadRoutes);
 
 

@@ -59,3 +59,24 @@ export interface ICourseMaterial {
     uploaded_by: Types.ObjectId;
     uploaded_at?: Date;
 }
+
+
+
+
+export interface ICourseCart {
+    student_id: Types.ObjectId;
+    course_id: Types.ObjectId;
+    added_at?: Date;
+}
+
+export interface ICoursePayment {
+    student_id: Types.ObjectId;
+    course_id: Types.ObjectId;
+    stripe_payment_intent_id?: string;
+    stripe_customer_id?: string;
+    amount_paid: number;
+    currency: string;
+    status: 'succeeded' | 'failed' | 'refunded';
+    receipt_url?: string;
+    paid_at?: Date;
+}

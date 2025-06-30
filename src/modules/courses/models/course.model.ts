@@ -1,9 +1,9 @@
 import { Schema, model, Types } from 'mongoose';
 import { ICourse } from '../types';
 
+interface ICourseDocument extends ICourse, Document { }
 
-
-const CourseSchema = new Schema<ICourse>({
+const CourseSchema = new Schema<ICourseDocument>({
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     thumbnail_url: { type: String },
@@ -27,4 +27,4 @@ const CourseSchema = new Schema<ICourse>({
 
 
 
-export const CourseModel = model<ICourse>('Course', CourseSchema);
+export const CourseModel = model<ICourseDocument>('Course', CourseSchema);

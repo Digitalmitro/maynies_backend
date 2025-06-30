@@ -3,34 +3,77 @@ import { courseController } from '../controllers/course.controller';
 import { validate } from '../../../shared/middleware/validation';
 import { createCourseSchema } from '../dtos/createCourse.dto';
 import { updateCourseSchema } from '../dtos/updateCourse.dto';
+import { addToCartSchema } from '../dtos/addToCart.dto';
 import { authenticate } from '../../../modules/auth/middleware/auth.middleware';
 import { requireRole } from '../../../shared/middleware/roleBasedMiddleware';
 
 const router = Router();
 
-// 🔐 Admin creates a course
+
+
+/* ---------------------------------------------
+   🛒 STUDENT CART ROUTES
+---------------------------------------------- */
+
+// Add course to cart
+router.post(
+    '/cart',
+    authenticate,
+    requireRole('student'),
+    validate(addToCartSchema),
+    courseController.addToCart.bind(courseController)
+);
+
+// Get student’s cart
+router.get(
+    '/cart',
+    authenticate,
+    requireRole('student'),
+    courseController.getCart.bind(courseController)
+);
+
+// Remove course from cart
+router.delete(
+    '/cart/:courseId',
+    authenticate,
+    requireRole('student'),
+    courseController.removeCart.bind(courseController)
+);
+
+
+/* ---------------------------------------------
+   🔓 PUBLIC / COMMON ROUTES
+---------------------------------------------- */
+
+// Get all published courses (public or user-specific)
 router.get(
     '/',
     authenticate,
-    requireRole('admin'),
-    (req, res, next) => { courseController.getAllCourses(req, res, next) }
+    courseController.getAllCourses.bind(courseController)
 );
 
+// Get course details by slug
+router.get(
+    '/:slug',
+    authenticate,
+    courseController.getCourseBySlug.bind(courseController)
+);
+
+
+/* ---------------------------------------------
+   🔐 ADMIN ROUTES
+---------------------------------------------- */
+
+// Create a new course
 router.post(
     '/',
     authenticate,
     requireRole('admin'),
     validate(createCourseSchema),
-    (req, res, next) => { courseController.createCourse(req, res, next) }
+    courseController.createCourse.bind(courseController)
 );
 
-router.get(
-    '/:slug',
-    authenticate,
-    requireRole('admin'),
-    (req, res, next) => { courseController.getCourseBySlug(req, res, next) }
-);
-
+// Update course
 router.put(
     '/:id',
     authenticate,
@@ -39,6 +82,7 @@ router.put(
     courseController.updateCourse.bind(courseController)
 );
 
+// Soft delete course
 router.delete(
     '/:id',
     authenticate,
@@ -46,10 +90,6 @@ router.delete(
     courseController.deleteCourse.bind(courseController)
 );
 
-// 🚀 (Future)
-// router.get('/', courseController.getAllCourses);
-// router.get('/:slug', courseController.getCourseDetail);
-// router.get('/:id/materials', courseController.getCourseMaterials);
-// router.get('/:id/enrollments', authenticate, requireRole('admin'), courseController.getEnrollmentsByCourse);
+
 
 export default router;

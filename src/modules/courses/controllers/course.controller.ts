@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CourseService } from '../services/course.services';
 import { CreateCourseDto } from '../dtos/createCourse.dto';
 import { UpdateCourseDto } from '../dtos/updateCourse.dto';
+import { AddToCartDto } from '../dtos/addToCart.dto';
 
 export class CourseController {
 
@@ -59,6 +60,39 @@ export class CourseController {
             const { id } = req.params;
             await this.courseService.softDeleteCourse(id);
             res.status(200).json({ message: 'Course deleted successfully (soft delete)' });
+        } catch (err) {
+            next(err);
+        }
+    }
+
+    async addToCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const input = req.body as AddToCartDto;
+            const studentId = req.user?.user?._id;
+
+            const item = await this.courseService.addToCart(input, studentId);
+            res.status(201).json({ message: 'Added to cart', data: item });
+        } catch (err) {
+            next(err);
+        }
+    }
+    async getCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const studentId = req.user?.user?._id;
+            const items = await this.courseService.getCartItems(studentId);
+            res.json({ message: 'Cart fetched', data: items });
+        } catch (err) {
+            next(err);
+        }
+    }
+
+    async removeCart(req: Request, res: Response, next: NextFunction) {
+        try {
+            const courseId = req.params.courseId;
+            const studentId = req.user?.user?._id;
+
+            const removed = await this.courseService.removeFromCart(courseId, studentId);
+            res.json({ message: 'Course removed from cart', data: removed });
         } catch (err) {
             next(err);
         }

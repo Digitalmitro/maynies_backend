@@ -4,6 +4,10 @@ import { CourseDetailModel } from '../models/courseDetail.model';
 import { generateUniqueSlug } from '../../../shared/utils/slugify'; // optional helper
 import { CourseMaterialModel } from '../models/courseMaterial.model';
 import { UpdateCourseDto } from '../dtos/updateCourse.dto';
+import { CourseCartModel } from '../models/courseCart.model';
+import { AddToCartDto } from '../dtos/addToCart.dto';
+import { Types } from 'mongoose';
+import { BaseError } from '../../../shared/utils/baseError';
 
 
 interface GetCoursesQuery {
@@ -222,6 +226,43 @@ export class CourseService {
         });
 
         // Optionally log or notify
+    }
+
+    async addToCart(input: AddToCartDto, studentId: string) {
+        const exists = await CourseCartModel.findOne({
+            student_id: new Types.ObjectId(studentId),
+            course_id: new Types.ObjectId(input.course_id)
+        });
+
+        if (exists) {
+            throw new BaseError('Course is already in your cart', 400);
+        }
+
+        const item = await CourseCartModel.create({
+            course_id: input.course_id,
+            student_id: studentId
+        });
+
+        return item;
+    }
+
+    async getCartItems(studentId: string) {
+        return CourseCartModel.find({ student_id: studentId })
+            .populate('course_id')  // for full course details
+            .sort({ createdAt: -1 }) // latest first
+            .lean();
+    }
+    async removeFromCart(courseId: string, studentId: string) {
+        const deleted = await CourseCartModel.findOneAndDelete({
+            course_id: courseId,
+            student_id: studentId
+        });
+
+        if (!deleted) {
+            throw new Error("Course not found in your cart");
+        }
+
+        return deleted;
     }
 
 }

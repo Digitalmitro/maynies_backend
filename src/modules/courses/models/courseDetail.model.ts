@@ -1,7 +1,10 @@
 import { Schema, model, Types } from 'mongoose';
 import { ICourseDetail } from '../types';
 
-const CourseDetailSchema = new Schema<ICourseDetail>({
+
+interface ICourseDetailDocument extends ICourseDetail, Document { }
+
+const CourseDetailSchema = new Schema<ICourseDetailDocument>({
     course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true, index: true },
 
     description: { type: String },
@@ -17,4 +20,4 @@ const CourseDetailSchema = new Schema<ICourseDetail>({
     timestamps: true
 });
 
-export const CourseDetailModel = model<ICourseDetail>('CourseDetail', CourseDetailSchema);
+export const CourseDetailModel = model<ICourseDetailDocument>('CourseDetail', CourseDetailSchema);
