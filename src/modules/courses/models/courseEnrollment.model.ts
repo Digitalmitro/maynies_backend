@@ -17,7 +17,11 @@ const CourseEnrollmentSchema = new Schema<ICourseEnrollmentDocument>({
     ordered_at: { type: Date, default: Date.now },
 
     access_granted: { type: Boolean, default: false },
-    access_notes: { type: String }
+    access_notes: { type: String },
+
+    // soft-delete fields (optional, future-proofing)
+    is_deleted: { type: Boolean, default: false },
+    deleted_at: { type: Date }
 }, {
     timestamps: true
 });

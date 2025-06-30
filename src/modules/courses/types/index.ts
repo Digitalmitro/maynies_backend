@@ -46,7 +46,10 @@ export interface ICourseEnrollment {
 
     access_granted: boolean;
     access_notes?: string;
+    is_deleted?: boolean;
+    deleted_at?: Date;
 }
+
 
 
 export interface ICourseMaterial {
@@ -72,11 +75,14 @@ export interface ICourseCart {
 export interface ICoursePayment {
     student_id: Types.ObjectId;
     course_id: Types.ObjectId;
+    stripe_session_id?: string; // For Stripe Checkout Session
     stripe_payment_intent_id?: string;
     stripe_customer_id?: string;
     amount_paid: number;
     currency: string;
-    status: 'succeeded' | 'failed' | 'refunded';
+    status: 'succeeded' | 'failed' | 'refunded' | 'pending'; // 'pending' added for initial state
     receipt_url?: string;
     paid_at?: Date;
+    is_deleted?: boolean;
+    deleted_at?: Date;
 }

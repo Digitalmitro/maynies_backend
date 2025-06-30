@@ -10,6 +10,7 @@ const CoursePaymentSchema = new Schema<ICoursePaymentDocument>(
         student_id: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
 
+        stripe_session_id: { type: String, index: true },
         stripe_payment_intent_id: { type: String },
         stripe_customer_id: { type: String },
 
@@ -18,12 +19,14 @@ const CoursePaymentSchema = new Schema<ICoursePaymentDocument>(
 
         status: {
             type: String,
-            enum: ['succeeded', 'failed', 'refunded'],
-            default: 'succeeded'
+            enum: ['pending', 'succeeded', 'failed', 'refunded'],  // add 'pending' first
+            default: 'pending'
         },
 
         receipt_url: { type: String },
-        paid_at: { type: Date, default: Date.now }
+        paid_at: { type: Date, default: Date.now }, // soft-delete fields
+        is_deleted: { type: Boolean, default: false },
+        deleted_at: { type: Date }
     },
     {
         timestamps: true
