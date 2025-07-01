@@ -1,24 +1,26 @@
-// src/modules/student/routes/admission.routes.ts
+// src/modules/student/routes/student.route.ts
+
 import { Router } from 'express';
-import { admissionController } from '../controllers/admission.controller';
 import { authenticate } from '../../auth/middleware/auth.middleware';
+import { requireRole } from '../../../shared/middleware/roleBasedMiddleware';
+
+// Sub-module routes
+import admissionRoutes from './admission.route';
+// import dashboardRoutes from './dashboard.routes';
+// import enrollmentRoutes from './enrollment.routes';
+// import paymentRoutes from './payment.routes';
+// ... import other student-specific routers as needed
 
 const router = Router();
-// Protect all routes: only students
-router.use(authenticate);
 
-// Fetch full application
-router.get('/', (req, res, next) => { admissionController.getApplication(req, res, next) });
-// Fetch only status
-router.get('/status', (req, res, next) => { admissionController.getStatus(req, res, next) });
-// Create or update (re-apply) admission
-router.post('/apply', (req, res, next) => { admissionController.apply(req, res, next) });
-// Add a document reference
-router.post('/documents', (req, res, next) => { admissionController.addDocument(req, res, next) });
-// List all documents
-router.get('/documents', (req, res, next) => { admissionController.listDocuments(req, res, next) });
-// Soft-delete a document
-router.delete('/documents/:fileId', (req, res, next) => { admissionController.deleteDocument(req, res, next) });
-// Restore a soft-deleted document
+// Apply auth + role guard to all /api/student routes
+router.use(authenticate, requireRole('student'));
+
+// Mount sub-routers
+router.use('/admission', admissionRoutes);     // /api/student/admission
+//router.use('/dashboard', dashboardRoutes);     // /api/student/dashboard
+//router.use('/enrollments', enrollmentRoutes); // /api/student/enrollments
+//router.use('/payments', paymentRoutes);       // /api/student/payments
+// ... add more mounts here
 
 export default router;

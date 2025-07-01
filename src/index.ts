@@ -6,6 +6,7 @@ import authRoutes from './modules/auth/routes/auth.route';
 import userRoutes from './modules/user/routes/user.route';
 import jobRoutes from './modules/job/routes/job.route';
 import crmRoutes from './modules/crm/routes/crm.routes';
+import studentRoutes from './modules/student/routes/student.route';
 import uploadRoutes from './modules/upload/routes/upload.route';
 import courseRoutes from './modules/courses/routes/course.route';
 import paymentRoutes from './modules/courses/routes/coursePayment.route';
@@ -50,6 +51,7 @@ async function start() {
     app.use('/api/user', userRoutes);
     app.use('/api/jobs', jobRoutes);
     app.use('/api/employer', crmRoutes);
+    app.use('/api/student', studentRoutes);
     app.use('/api/courses', courseRoutes);
     app.use('/api/payment', paymentRoutes);
     app.use('/api/upload', uploadRoutes);
