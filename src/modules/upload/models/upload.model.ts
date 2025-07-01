@@ -50,7 +50,13 @@ const UploadedFileSchema = new Schema<IUploadedFile>(
         metadata: {
             name: { type: String, default: null }, // e.g., "Aadhar Card"
             tags: [{ type: String }],
-            expires_at: { type: Date }
+            expires_at: { type: Date },
+            admission_id: {
+                type: Schema.Types.ObjectId,
+                ref: 'Admission',
+                required: false,
+                index: true      // for fast lookup of docs by admission
+            }
         }
     },
     {
@@ -59,6 +65,6 @@ const UploadedFileSchema = new Schema<IUploadedFile>(
 );
 
 // Compound index for performance (optional but useful)
-UploadedFileSchema.index({ context: 1, owner_id: 1, is_deleted: 1 });
+UploadedFileSchema.index({ context: 1, owner_id: 1, 'metadata.admission_id': 1, is_deleted: 1 });
 
 export const UploadedFileModel = model<IUploadedFile>('UploadedFile', UploadedFileSchema);

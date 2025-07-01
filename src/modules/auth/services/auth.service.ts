@@ -158,13 +158,13 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
 
@@ -341,37 +341,26 @@ class AuthService {
         );
 
         // 4. Create new refresh token
-        const newPlain = crypto.randomBytes(40).toString('hex');
-        const newHash = await bcrypt.hash(newPlain, 10);
-        const newExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // example: 7 days
+        const { plainToken: newPlain } = await this.generateRefreshToken(matchedToken.user_id, ipAddress);
 
-        await RefreshTokenModel.create({
-            user_id: matchedToken.user_id,
-            token_hash: newHash,
-            expires_at: newExpires,
-            created_by_ip: ipAddress,
-            replaced_by: matchedToken._id
-        });
 
         // 5. Create new access token
-        const accessToken = jwt.sign(
-            { sub: matchedToken.user_id.toString() },
-            process.env.JWT_SECRET!,
-            { expiresIn: '60s' } as SignOptions
-        );
+        const accessToken = this.generateAccessToken(matchedToken.user_id);
 
         // 6. Set cookies
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
+            path: '/',
             maxAge: 15 * 60 * 1000
         });
 
         res.cookie('refreshToken', newPlain, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
+            path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
