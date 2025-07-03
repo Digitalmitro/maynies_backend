@@ -5,6 +5,7 @@ import { UserModel } from '../models/user.modal';
 import { UserProfileModel } from '../models/userProfile.model';
 import { UserRoleModel } from '../models/userRole.model';
 import { EmployeeProfileModel } from '../../crm/models/employer.model';
+import { StudentProfileModel } from '../../student/models/studentProfile.dto';
 
 export class UserService {
     /**
@@ -46,9 +47,10 @@ export class UserService {
             }
 
             if (input.roleName === 'student') {
-                // await StudentProfileModel.create([{
-                //     user_id: user[0]._id,
-                // }], { session });
+                await StudentProfileModel.create(
+                    [{ user_id: user[0]._id }],
+                    { session }
+                );
             }
 
             // 4. Assign role

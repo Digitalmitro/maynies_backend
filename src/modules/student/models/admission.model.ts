@@ -1,3 +1,5 @@
+// src/modules/student/models/admission.model.ts
+
 import { Schema, model, Document, Types } from 'mongoose';
 import { IAdmission } from '../types';
 
@@ -9,7 +11,7 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
             type: Types.ObjectId,
             ref: 'User',
             required: false,
-            unique: true,   // ← ensure one record per student
+            unique: true,   // one admission per student
             index: true,
         },
         personal: {
@@ -19,6 +21,8 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
             gender: { type: String, enum: ['male', 'female', 'other'], required: true },
             email: { type: String, required: true },
             mobile: { type: String, required: true },
+            country: { type: String, required: true },
+            marital_status: { type: String, default: null },
         },
         address: {
             street: { type: String, required: true },
@@ -32,10 +36,17 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
             grade: { type: String, required: true },
             passing_year: { type: Number, required: true },
         },
-        guardian: {
-            name: { type: String, required: true },
+        parent: {
+            first_name: { type: String, required: true },
+            last_name: { type: String, required: true },
+            email: { type: String, required: true },
             contact: { type: String, required: true },
-            relation: { type: String, required: true },
+            address: {
+                street: { type: String, required: true },
+                city: { type: String, required: true },
+                state: { type: String, required: true },
+                zip: { type: String, required: true },
+            },
         },
         status: {
             type: String,
@@ -46,7 +57,7 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
         submitted_at: {
             type: Date,
             default: Date.now,
-            index: -1,
+            index: -1,  // descending index
         },
         reviewed_at: { type: Date },
     },
@@ -58,6 +69,7 @@ const AdmissionSchema = new Schema<IAdmissionDocument>(
 
 // Compound index for admin queries
 AdmissionSchema.index({ status: 1, submitted_at: -1 });
+
 // Shard key for scalability
 AdmissionSchema.set('shardKey', { user_id: 'hashed' });
 

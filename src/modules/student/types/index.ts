@@ -17,25 +17,41 @@ export type IAdmission = {
         gender: 'male' | 'female' | 'other';
         email: string;
         mobile: string;
+        country: string;
+        marital_status?: 'single' | 'married' | 'divorced' | 'widowed';
     };
+
     address: {
         street: string;
         city: string;
         state: string;
         zip: string;
     };
+
     academic: {
         institute: string;
         qualification: string;
         grade: string;
         passing_year: number;
     };
-    guardian: {
-        name: string;
+
+    parent: {
+        first_name: string;
+        last_name: string;
+        email: string;
         contact: string;
-        relation: string;
+        address: {
+            street: string;
+            city: string;
+            state: string;
+            zip: string;
+        };
     };
-    status: 'pending' | 'approved' | 'rejected';
+
+    documents?: Schema.Types.ObjectId[];  // references to UploadedFile
+
+    status: 'pending' | 'process' | 'approved' | 'rejected';
+
     submitted_at: Date;
     reviewed_at?: Date;
-}
+};

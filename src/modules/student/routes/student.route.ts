@@ -14,7 +14,7 @@ import admissionRoutes from './admission.route';
 const router = Router();
 
 // Apply auth + role guard to all /api/student routes
-router.use(authenticate, requireRole('student'));
+// router.use();
 
 // Mount sub-routers
 router.use('/admission', admissionRoutes);     // /api/student/admission

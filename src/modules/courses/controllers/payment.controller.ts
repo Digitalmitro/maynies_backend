@@ -45,7 +45,8 @@ export const createCheckoutSession = async (
             },
             success_url: `${process.env.STRIPE_SUCCESS_URL}?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: process.env.STRIPE_CANCEL_URL,
-        });
+
+        }, { idempotencyKey: `${studentId}-${course_id}` });
 
         // 3. Record initial payment in our DB as “pending”
         await CoursePaymentModel.create({
@@ -53,6 +54,7 @@ export const createCheckoutSession = async (
             course_id,
             stripe_session_id: session.id,
             // we don’t have payment_intent yet
+            stripe_payment_intent_id: session.payment_intent,
             amount_paid: course.discount_price || course.price,
             currency: 'INR',
             status: 'pending',

@@ -11,6 +11,9 @@ const secret = env.JWT_SECRET!;
 export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const { accessToken, refreshToken } = req.cookies;
+
+        // console.log(accessToken, refreshToken);
+
         if (!accessToken && !refreshToken) {
             throw new BaseError('Not authenticated', 401);
         }

@@ -13,4 +13,11 @@ router.post(
 );
 
 
+router.get(
+    '/:context',
+    authenticate,
+    (req, res, next) => { uploadController.listFiles(req, res, next) }
+);
+
+
 export default router;
