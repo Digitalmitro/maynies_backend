@@ -32,9 +32,9 @@ async function start() {
     app.set('trust proxy', true);
 
 
+    // app.use(cors({"*"}));
     app.use(cors({
-        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-        credentials: true, // Allow cookies to be sent with requests
+        origin: '*'
     }));
 
     app.use('/api/payment/webhook', express.raw({ type: 'application/json' }), (req: Request, res: Response) => { stripeWebhook(req, res) });
