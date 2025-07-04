@@ -1,8 +1,9 @@
 import { Request } from "express";
+import { Schema } from "mongoose";
 import { Types } from "mongoose";
 
 export interface IOtp {
-    user_id: Types.ObjectId;                          // Reference to User _id
+    user_id: Schema.Types.ObjectId;                          // Reference to User _id
     otp_hash: string;                                 // Renamed for clarity
     type: 'email_verification' | 'password_reset';
     expires_at: Date;
@@ -75,3 +76,14 @@ export interface VerifyOtpInput {
 }
 
 
+export interface IAuditLog {
+    user_id?: Types.ObjectId;     // agar guest bhi ho toh null ho sakta
+    action: string;               // e.g. 'USER_REGISTER', 'COURSE_ENROLL'
+    module: string;               // e.g. 'Auth', 'Courses', 'Jobs'
+    resource_id?: string;         // affected document id
+    before?: any;                 // old data (optional)
+    after?: any;                  // new data (optional)
+    ip_address?: string;          // request IP
+    user_agent?: string;          // browser info
+    created_at?: Date;
+}

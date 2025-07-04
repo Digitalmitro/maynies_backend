@@ -42,17 +42,7 @@ export interface IUserProfile {
     updated_at?: Date;
 }
 
-export interface IAuditLog {
-    user_id?: Types.ObjectId;     // agar guest bhi ho toh null ho sakta
-    action: string;               // e.g. 'USER_REGISTER', 'COURSE_ENROLL'
-    module: string;               // e.g. 'Auth', 'Courses', 'Jobs'
-    resource_id?: string;         // affected document id
-    before?: any;                 // old data (optional)
-    after?: any;                  // new data (optional)
-    ip_address?: string;          // request IP
-    user_agent?: string;          // browser info
-    created_at?: Date;
-}
+
 
 
 export interface IUser {
