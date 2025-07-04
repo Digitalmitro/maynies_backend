@@ -8,6 +8,7 @@ import { CourseCartModel } from '../models/courseCart.model';
 import { AddToCartDto } from '../dtos/addToCart.dto';
 import { Types } from 'mongoose';
 import { BaseError } from '../../../shared/utils/baseError';
+import { CourseEnrollmentModel } from '../models/courseEnrollment.model';
 
 
 interface GetCoursesQuery {
@@ -24,8 +25,6 @@ interface GetCoursesQuery {
 
 
 export class CourseService {
-
-
 
     async createCourse(input: CreateCourseDto, createdBy: string) {
         const {
@@ -128,7 +127,8 @@ export class CourseService {
             courses
         };
     }
-    async getCourseBySlug(slug: string) {
+
+    async getCourseBySlug(slug: string, userId: string) {
         const course = await CourseModel.findOne({
             slug,
             is_active: true,
@@ -141,9 +141,19 @@ export class CourseService {
 
         const detail = await CourseDetailModel.findOne({ course_id: course._id }).lean();
         const materials = await CourseMaterialModel.find({ course_id: course._id }).lean();
+        let isEnrolled = false;
 
+        if (userId) {
+            const enrollment = await CourseEnrollmentModel.findOne({
+                course_id: course._id,
+                student_id: userId,
+                access_granted: true
+            }).lean();
+            isEnrolled = Boolean(enrollment);
+        }
         return {
             ...course,
+            isEnrolled,
             description: detail?.description,
             tags: detail?.tags || [],
             validity_days: detail?.validity_days || 0,
@@ -159,6 +169,9 @@ export class CourseService {
             }))
         };
     }
+
+
+
     async updateCourse(courseId: string, input: UpdateCourseDto, updatedBy: string) {
         const {
             title, slug, description,

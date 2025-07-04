@@ -35,7 +35,8 @@ export class CourseController {
     async getCourseBySlug(req: Request, res: Response, next: NextFunction) {
         try {
             const { slug } = req.params;
-            const course = await this.courseService.getCourseBySlug(slug);
+            const userId = req?.user?.user?._id;
+            const course = await this.courseService.getCourseBySlug(slug, userId);
             res.status(200).json({ message: 'Course detail fetched', data: course });
         } catch (err) {
             next(err);
