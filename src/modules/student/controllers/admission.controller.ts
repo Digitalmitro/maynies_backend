@@ -99,6 +99,39 @@ export class AdmissionController {
         }
     }
 
+
+    async getAllApplication(req: Request, res: Response, next: NextFunction) {
+        try {
+            // 1. Auth check
+            const userId = req.user?.user?._id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: 'Unauthorized' });
+            }
+
+            // 2. Fetch admission for this user
+            const admission = await AdmissionModel.find().lean();
+            if (!admission) {
+                return res.status(404).json({ success: false, message: 'No admission found' });
+            }
+
+            // 3. Fetch linked documents (student_document context)
+            const documents = await uploadService.listFiles(
+                UploadContext.STUDENT_DOCUMENT,
+                userId,
+                // admission._id.toString()
+            );
+
+            // 4. Respond with both
+            return res.json({
+                success: true,
+                admission,
+                documents
+            });
+        } catch (err) {
+            next(err);
+        }
+    }
+
     async updateAdmission(req: Request, res: Response, next: NextFunction) {
         const dto = req.body as UpdateAdmissionDTO;
         const userId = req.user?.user?._id;
