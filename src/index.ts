@@ -14,6 +14,7 @@ import { seedRoles } from './scripts/seedRoles';
 import { errorHandler } from './shared/middleware/errorMiddleWare';
 import cors from 'cors';
 import path from 'path';
+import { stripeWebhook } from './modules/courses/controllers/payment.controller';
 
 
 
@@ -36,7 +37,7 @@ async function start() {
         credentials: true, // Allow cookies to be sent with requests
     }));
 
-    app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
+    app.use('/api/payment/webhook', express.raw({ type: 'application/json' }), (req: Request, res: Response) => { stripeWebhook(req, res) });
     app.use(express.json());
     app.use(cookieParser());
 

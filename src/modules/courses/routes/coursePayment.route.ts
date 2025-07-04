@@ -28,5 +28,5 @@ router.get(
 );
 
 
-router.get('/confirm-session', authenticate, (req, res, next) => { confirmSession(req, res, next) });
+router.get('/confirm-session', (req, res, next) => { confirmSession(req, res, next) });
 export default router;

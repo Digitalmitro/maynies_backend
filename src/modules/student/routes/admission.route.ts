@@ -15,6 +15,8 @@ const router = Router();
 
 // Fetch full application
 router.get('/', authenticate, requireRole('student'), (req, res, next) => { admissionController.getApplication(req, res, next) });
+
+router.get('/all', authenticate, requireRole('admin'), (req, res, next) => { admissionController.getAllApplication(req, res, next) });
 // Fetch only status
 // router.get('/status', (req, res, next) => { admissionController.getStatus(req, res, next) });
 // Create or update (re-apply) admission
