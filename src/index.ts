@@ -15,6 +15,7 @@ import { errorHandler } from './shared/middleware/errorMiddleWare';
 import cors from 'cors';
 import path from 'path';
 import { stripeWebhook } from './modules/courses/controllers/payment.controller';
+import { env } from './config/env';
 
 
 
@@ -34,7 +35,7 @@ async function start() {
 
     // app.use(cors({"*"}));
     app.use(cors({
-        origin: '*'
+        origin: env.CORS_ORIGIN
     }));
 
 

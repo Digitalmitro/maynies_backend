@@ -11,6 +11,7 @@ const envSchema = z.object({
     REDIS_URL: z.string().optional().default('redis://localhost:6379'),
     JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
     JWT_EXPIRES_IN: z.string().min(1, 'JWT_EXPIRES_IN is required'),
+    CORS_ORIGIN: z.string().url().optional().default('http://localhost:5173'),
 });
 
 // Parse and validate process.env
