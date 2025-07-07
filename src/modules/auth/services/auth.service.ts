@@ -155,17 +155,26 @@ class AuthService {
             { replaced_by: newRefreshDoc._id }
         );
         // 6. Set cookies exactly like verifyOtp
+        const isProd = process.env.NODE_ENV === 'production';
+        const cookieDomain = isProd
+            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
+            ? 'maynies-admin.onrender.com'
+            : 'localhost';
+
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,    // no https://, just the hostname
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
+
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -237,22 +246,26 @@ class AuthService {
         const { plainToken } = await this.generateRefreshToken(user._id, req.ip || '')
 
 
-
+        const isProd = process.env.NODE_ENV === 'production';
+        const cookieDomain = isProd
+            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
+            ? 'maynies-admin.onrender.com'
+            : 'localhost';
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,    // no https://, just the hostname
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
 
-
-        // Refresh Token (long-lived)
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -352,21 +365,30 @@ class AuthService {
         const accessToken = this.generateAccessToken(matchedToken.user_id);
 
         // 6. Set cookies
+        const isProd = process.env.NODE_ENV === 'production';
+        const cookieDomain = isProd
+            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
+            ? 'maynies-admin.onrender.com'
+            : 'localhost';
+
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,    // no https://, just the hostname
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
 
-        res.cookie('refreshToken', newPlain, {
+        res.cookie('refreshToken', plainToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: isProd,
+            sameSite: isProd ? 'lax' : 'strict',
+            domain: cookieDomain,
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
+
 
         return {
             userId: matchedToken.user_id.toString(),
