@@ -46,16 +46,12 @@ async function start() {
     // CORS middleware with dynamic origin checking
     app.use(cors({
         origin: (incomingOrigin, callback) => {
-            // Allow requests with no origin (like mobile apps or CURL)
             if (!incomingOrigin) return callback(null, true);
-
             if (allowedOrigins.includes(incomingOrigin)) {
-                // Origin is on the whitelist
                 return callback(null, true);
-            } else {
-                // Origin not allowed — throw error or silently block
-                return callback(new Error(`CORS policy: Access from ${incomingOrigin} not allowed`));
             }
+            // silently reject
+            return callback(null, false);
         },
         credentials: true,             // if you need cookies/auth
         optionsSuccessStatus: 200,     // for legacy browsers
