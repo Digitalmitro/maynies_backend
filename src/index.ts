@@ -34,8 +34,31 @@ async function start() {
 
 
     // app.use(cors({"*"}));
+
+
+    const allowedOrigins = [
+        process.env.LOCAL_SITE_ORIGIN,
+        process.env.DEV_SITE_ORIGIN,
+        process.env.LOCAL_ADMIN_ORIGIN,
+        process.env.DEV_ADMIN_ORIGIN,
+    ].filter(Boolean);
+
+    // CORS middleware with dynamic origin checking
     app.use(cors({
-        origin: env.CORS_ORIGIN
+        origin: (incomingOrigin, callback) => {
+            // Allow requests with no origin (like mobile apps or CURL)
+            if (!incomingOrigin) return callback(null, true);
+
+            if (allowedOrigins.includes(incomingOrigin)) {
+                // Origin is on the whitelist
+                return callback(null, true);
+            } else {
+                // Origin not allowed — throw error or silently block
+                return callback(new Error(`CORS policy: Access from ${incomingOrigin} not allowed`));
+            }
+        },
+        credentials: true,             // if you need cookies/auth
+        optionsSuccessStatus: 200,     // for legacy browsers
     }));
 
 
