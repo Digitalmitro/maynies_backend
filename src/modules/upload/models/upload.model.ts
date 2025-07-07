@@ -13,7 +13,7 @@ export enum UploadContext {
     COURSE_MATERIAL = 'course_material',
 
     ADMIN_POLICY_PDF = 'admin_policy_pdf',
-
+    JOB_ATTACHMENT = 'job_attachment',
     GENERAL_ATTACHMENT = 'general_attachment' // optional future
 }
 
