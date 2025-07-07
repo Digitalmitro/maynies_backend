@@ -12,7 +12,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     try {
         const { accessToken, refreshToken } = req.cookies;
 
-        // console.log(accessToken, refreshToken);
+        console.log(accessToken, refreshToken);
 
         if (!accessToken && !refreshToken) {
             throw new BaseError('Not authenticated', 401);

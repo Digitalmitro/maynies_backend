@@ -160,7 +160,7 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -168,7 +168,7 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -245,7 +245,7 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -253,7 +253,7 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -359,15 +359,15 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
 
-        res.cookie('refreshToken', plainToken, {
+        res.cookie('refreshToken', newPlain, {
             httpOnly: true,
             secure: isProd,
-            sameSite: "none",
+            sameSite: isProd ? 'none' : 'lax',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
