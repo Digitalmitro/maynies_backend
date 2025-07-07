@@ -37,14 +37,15 @@ async function start() {
         origin: '*'
     }));
 
+
     app.use('/api/payment/webhook', express.raw({ type: 'application/json' }), (req: Request, res: Response) => { stripeWebhook(req, res) });
+
     app.use(express.json());
     app.use(cookieParser());
 
     app.use('/api/uploads', express.static(path.join(__dirname, '../uploads'), {
         index: false
     }));
-
 
 
     // 3) Simple health-check route
