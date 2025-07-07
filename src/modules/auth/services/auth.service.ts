@@ -158,14 +158,14 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -243,6 +243,7 @@ class AuthService {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
+            path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
 
@@ -251,7 +252,7 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -354,7 +355,7 @@ class AuthService {
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -362,7 +363,7 @@ class AuthService {
         res.cookie('refreshToken', newPlain, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
