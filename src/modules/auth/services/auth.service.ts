@@ -156,16 +156,11 @@ class AuthService {
         );
         // 6. Set cookies exactly like verifyOtp
         const isProd = process.env.NODE_ENV === 'production';
-        const cookieDomain = isProd
-            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
-            ? 'maynies-admin.onrender.com'
-            : 'localhost';
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,    // no https://, just the hostname
+            sameSite: "none",
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -173,8 +168,7 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,
+            sameSite: "none",
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
@@ -247,16 +241,11 @@ class AuthService {
 
 
         const isProd = process.env.NODE_ENV === 'production';
-        const cookieDomain = isProd
-            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
-            ? 'maynies-admin.onrender.com'
-            : 'localhost';
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,    // no https://, just the hostname
+            sameSite: "none",
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -264,11 +253,11 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,
+            sameSite: "none",
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
+
 
         const profile = await UserProfileModel.findOne({ user_id: user._id }).exec();
 
@@ -366,16 +355,11 @@ class AuthService {
 
         // 6. Set cookies
         const isProd = process.env.NODE_ENV === 'production';
-        const cookieDomain = isProd
-            // if you ever move to a custom root domain (e.g. maynies.com), use: '.maynies.com'
-            ? 'maynies-admin.onrender.com'
-            : 'localhost';
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,    // no https://, just the hostname
+            sameSite: "none",
             path: '/',
             maxAge: this.jwtExpiresInSeconds * 1000,
         });
@@ -383,8 +367,7 @@ class AuthService {
         res.cookie('refreshToken', plainToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'lax' : 'strict',
-            domain: cookieDomain,
+            sameSite: "none",
             path: '/',
             maxAge: this.refreshTokenTTL_SEC * 1000,
         });
