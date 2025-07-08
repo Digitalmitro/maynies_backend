@@ -17,6 +17,7 @@ export enum UploadContext {
     GENERAL_ATTACHMENT = 'general_attachment' // optional future
 }
 
+
 const UploadedFileSchema = new Schema<IUploadedFile>(
     {
         file_url: { type: String, required: true },

@@ -38,6 +38,8 @@ export interface IUserProfile {
     last_name: string;
     avatar_url?: string;
     bio?: string;
+    contact_number?: string;
+    gender?: string;
     created_at?: Date;
     updated_at?: Date;
 }

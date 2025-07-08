@@ -12,16 +12,20 @@ const UserProfileSchema = new Schema<IUserProfileDoc>(
             unique: true,
             index: true
         },
-        first_name: { type: String, required: false },
-        last_name: { type: String, required: false },
+        first_name: { type: String, required: false, default: "" },
+        last_name: { type: String, required: false, default: "" },
         avatar_url: { type: String, default: null },
-        bio: { type: String, default: null }
+        contact_number: { type: String, default: null },
+        bio: { type: String, default: null },
+        gender: {
+            type: String,
+            enum: ['Male', 'Female', 'Other'],
+            default: 'Other',
+        },
     },
     {
-        timestamps: {
-            createdAt: 'created_at',
-            updatedAt: 'updated_at'
-        }
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+        autoIndex: process.env.NODE_ENV !== 'production',
     }
 );
 

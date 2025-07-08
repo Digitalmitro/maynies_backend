@@ -5,7 +5,7 @@ import { UserModel } from '../models/user.modal';
 import { UserProfileModel } from '../models/userProfile.model';
 import { UserRoleModel } from '../models/userRole.model';
 import { EmployeeProfileModel } from '../../crm/models/employer.model';
-import { StudentProfileModel } from '../../student/models/studentProfile.dto';
+import { StudentProfileModel } from '../../student/models/studentProfile.model';
 
 export class UserService {
     /**
