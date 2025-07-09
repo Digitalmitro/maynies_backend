@@ -7,7 +7,7 @@ export interface ICourse {
     price: number;
     discount_price?: number;
     is_free: boolean;
-
+    credits?: number;
     category?: string;
     language?: string;
     level?: string;

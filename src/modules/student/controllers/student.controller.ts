@@ -48,8 +48,9 @@ class StudentProfileController {
             const userId = (req.user?.user as any)._id as string;
             const payload = req.body;
 
+            console.log(payload)
             // Split payload
-            const userProfileUpdate: Partial<{ first_Name: string; last_Name: string; avatar_Url: string; gender: string }> = {};
+            const userProfileUpdate: Partial<{ first_Name: string; last_Name: string; avatar_url: string; gender: string }> = {};
             const studentProfileUpdate: Partial<{ date_of_birth: Date; mothers_name?: string; race?: string; state?: string; city?: string }> = {};
 
             // fullName -> firstName, lastName
@@ -64,7 +65,7 @@ class StudentProfileController {
             }
 
             if (payload.avatarUrl) {
-                userProfileUpdate.avatar_Url = payload.avatarUrl;
+                userProfileUpdate.avatar_url = payload.avatarUrl;
             }
             if (payload.gender) {
                 userProfileUpdate.gender = payload.gender;

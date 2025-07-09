@@ -55,3 +55,28 @@ export type IAdmission = {
     submitted_at: Date;
     reviewed_at?: Date;
 };
+
+export interface AssignmentScore {
+    assignmentId: Schema.Types.ObjectId;
+    score: number;
+    maxScore: number;
+    submittedAt: Date;
+}
+
+export interface CourseGrade {
+    score: number;
+    grade: string;
+    computedAt: Date;
+}
+
+export interface Progress {
+    userId: Schema.Types.ObjectId;
+    courseId: Schema.Types.ObjectId;
+    assignments: AssignmentScore[];
+    courseGrade?: CourseGrade;
+    credits: number;
+    completedAt?: Date;
+    created_at?: Date;
+    updated_at?: Date;
+}
+

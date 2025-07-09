@@ -10,7 +10,7 @@ const CourseSchema = new Schema<ICourseDocument>({
     price: { type: Number, required: true },
     discount_price: { type: Number },
     is_free: { type: Boolean, default: false },
-
+    credits: { type: Number, required: true, default: 0 },
     category: { type: String },
     language: { type: String },
     level: { type: String },
