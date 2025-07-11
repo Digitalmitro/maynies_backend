@@ -13,6 +13,7 @@ class StudentProfileController {
      */
 
     // inside StudentProfileController
+
     async getProfile(req: Request, res: Response, next: NextFunction) {
         try {
             const userId = req?.user?.user?._id;

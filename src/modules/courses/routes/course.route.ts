@@ -54,10 +54,18 @@ router.get(
 
 // Get course details by slug
 router.get(
+    '/:courseId/enrollments',
+    authenticate,
+    requireRole('admin'),
+    (req, res, next) => courseController.listEnrollmentsByCourseId(req, res, next)
+);
+
+router.get(
     '/:slug',
     authenticate,
     courseController.getCourseBySlug.bind(courseController)
 );
+
 
 
 /* ---------------------------------------------

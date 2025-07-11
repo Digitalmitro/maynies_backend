@@ -1,71 +1,138 @@
-import { Schema, model, Document, Types } from 'mongoose';
-import { AssignmentScore, CourseGrade, Progress } from '../types';
+// models/Progress.model.ts
+import {
+    Schema,
+    model,
+    Document,
+    Types,
+    Model,
+} from 'mongoose';
 
+// 1. Define allowed letter‐grades
+export const GRADE_ENUM = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] as const;
+export type LetterGrade = typeof GRADE_ENUM[number];
 
+// 2. Interface for Progress document
+export interface IProgress {
+    studentId: Types.ObjectId;        // ref to User
+    courseId: Types.ObjectId;         // ref to Course
 
+    grade: LetterGrade;               // final letter grade
+    gpa: number;                      // 0.0 – 4.0 scale
+    progressPercent: number;          // 0 – 100
 
-interface ProgressDocument extends Progress, Document { }
-
-
-const AssignmentScoreSchema = new Schema<AssignmentScore>(
-    {
-        assignmentId: { type: Schema.Types.ObjectId, ref: 'Assignment', required: true },
-        score: { type: Number, required: true },
-        maxScore: { type: Number, required: true },
-        submittedAt: { type: Date, required: true, default: Date.now },
-    },
-    { _id: false }
-);
-
-const CourseGradeSchema = new Schema<CourseGrade>(
-    {
-        score: { type: Number, required: true },
-        grade: { type: String, required: true },
-        computedAt: { type: Date, required: true, default: Date.now },
-    },
-    { _id: false }
-);
-
-const ProgressSchema = new Schema<ProgressDocument>(
-    {
-        userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-        courseId: { type: Schema.Types.ObjectId, ref: 'Course', required: true, index: true },
-        assignments: { type: [AssignmentScoreSchema], default: [] },
-        courseGrade: { type: CourseGradeSchema, required: false },
-        credits: { type: Number, required: true },
-        completedAt: { type: Date, required: false },
-    },
-    {
-        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
-    }
-);
-
-export const ProgressModel = model<ProgressDocument>('Progress', ProgressSchema);
-
-
-export interface GpaSnapshot {
-
-    userId: Types.ObjectId;
-    term: string;
-    gpa: number;
-    computedAt?: Date;
-    created_at?: Date;
+    credits: number;                  // course credit hours
+    completedAt?: Date;               // when course was completed (optional)
 }
 
+export interface IProgressDoc extends IProgress, Document {
+    // instance method to recalc grade/gpa/progress if needed
+    recalcFrom(percent: number): void;
+}
 
-
-interface GpaSnapshotDocument extends GpaSnapshot, Document { }
-
-const GpaSnapshotSchema = new Schema<GpaSnapshotDocument>(
+// 3. Schema definition
+const ProgressSchema = new Schema<IProgressDoc>(
     {
-        userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-        term: { type: String, required: true },
-        gpa: { type: Number, required: true },
-        computedAt: { type: Date, required: true, default: Date.now },
+        studentId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+            index: true
+        },
+        courseId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Course',
+            required: true,
+            index: true
+        },
+
+        grade: {
+            type: String,
+            required: true,
+            enum: GRADE_ENUM
+        },
+        gpa: {
+            type: Number,
+            required: true,
+            min: 0,
+            max: 4.0
+        },
+        progressPercent: {
+            type: Number,
+            required: true,
+            min: 0,
+            max: 100
+        },
+
+        credits: {
+            type: Number,
+            required: true,
+            min: 0
+        },
+        completedAt: {
+            type: Date,
+            default: null
+        }
     },
     {
-        timestamps: { createdAt: 'created_at' }
+        timestamps: true,     // createdAt & updatedAt
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true }
     }
 );
 
-export const GpaSnapshotModel = model<GpaSnapshotDocument>('GpaSnapshot', GpaSnapshotSchema);
+// 4. Composite unique index: ek student-ek course ka ek hi record
+ProgressSchema.index(
+    { studentId: 1, courseId: 1 },
+    { unique: true }
+);
+
+// 5. Virtual: isCompleted flag
+ProgressSchema.virtual('isCompleted').get(function (this: IProgressDoc) {
+    return this.progressPercent === 100 || !!this.completedAt;
+});
+
+// 6. Instance method: recalc based on a new progress percent
+ProgressSchema.methods.recalcFrom = function (this: IProgressDoc, pct: number) {
+    // example logic: map percent -> gpa & grade
+    this.progressPercent = Math.min(100, Math.max(0, pct));
+    this.gpa = +(this.progressPercent / 25).toFixed(2); // 0–4 scale
+    // simple letter mapping
+    if (this.gpa >= 3.8) this.grade = 'A';
+    else if (this.gpa >= 3.5) this.grade = 'A-';
+    else if (this.gpa >= 3.0) this.grade = 'B+';
+    else if (this.gpa >= 2.5) this.grade = 'B';
+    else if (this.gpa >= 2.0) this.grade = 'C+';
+    else if (this.gpa >= 1.5) this.grade = 'C';
+    else if (this.gpa >= 1.0) this.grade = 'D';
+    else this.grade = 'F';
+
+    if (this.progressPercent === 100 && !this.completedAt) {
+        this.completedAt = new Date();
+    }
+};
+
+// 7. Pre‐save hook: ensure consistency
+ProgressSchema.pre<IProgressDoc>('save', function (next) {
+    // completedAt must only exist if progressPercent is 100
+    if (this.completedAt && this.progressPercent < 100) {
+        this.completedAt = undefined;
+    }
+    next();
+});
+
+// 8. Static helper (optional): fetch overview for a student
+interface ProgressModelType extends Model<IProgressDoc> {
+    fetchOverview(studentId: string | Types.ObjectId): Promise<IProgressDoc[]>;
+}
+ProgressSchema.statics.fetchOverview = function (studentId) {
+    return this.find({ studentId })
+        .populate('courseId', 'title credits')
+        .sort({ updatedAt: -1 })
+        .lean();
+};
+
+// 9. Export
+export const ProgressModel = model<IProgressDoc, ProgressModelType>(
+    'Progress',
+    ProgressSchema
+);

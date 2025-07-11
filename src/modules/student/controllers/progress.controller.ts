@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { ProgressModel } from "../models/progress.model";
-import { GradeInput } from "../dtos/Grade.dto";
 import { CourseEnrollmentModel } from "../../courses/models/courseEnrollment.model";
 import { Types } from "mongoose";
-import { CourseModel } from "../../courses/models/course.model";
+import { BaseError } from "../../../shared/utils/baseError";
 
 // src/modules/progress/progress.controller.js
 
@@ -11,19 +10,33 @@ class ProgressController {
 
 
 
-    async listProgress(req: Request, res: Response, next: NextFunction) {
+    async listOwnProgress(req: Request, res: Response, next: NextFunction) {
         try {
-            const userId = req?.user?.user?._id;
-            // Fetch all progress entries for this user
-            const progressList = await ProgressModel.find({ userId })
+            const userId = req.user!.user._id; // ya jahan se token middleware userId set karta hai
+
+            // Fetch all progress entries for this student, populate course info
+            const progressList = await ProgressModel.find({ studentId: userId })
                 .populate('courseId', 'title credits')
+                .sort({ updatedAt: -1 })
                 .lean();
 
-            return res.status(200).json({ success: true, data: progressList });
+            // Map into frontend-friendly shape
+            const data = progressList.map(p => ({
+                courseId: p.courseId._id,
+                title: (p.courseId as any).title,
+                credits: (p.courseId as any).credits,
+                grade: p.grade,
+                gpa: p.gpa,
+                progressPercent: p.progressPercent,
+                isCompleted: p.progressPercent === 100 || !!p.completedAt,
+                // updatedAt: p.updatedAt
+            }));
+
+            res.status(200).json({ success: true, data });
         } catch (err) {
             next(err);
         }
-    }
+    };
 
     async studentProgressListById(req: Request, res: Response, next: NextFunction) {
         try {
@@ -83,50 +96,59 @@ class ProgressController {
     // }
 
 
-    async addGrade(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) {
+    async addGrade(req: Request, res: Response, next: NextFunction) {
         try {
             const { courseId, studentId } = req.params;
-            const { score, grade } = req.body;
+            const { grade, gpa, progressPercent, credits } = req.body;
 
-            // 1) Ensure the student is actually enrolled in this course
-            const enrollment = await CourseEnrollmentModel.findOne({
-                course_id: new Types.ObjectId(courseId),
-                student_id: new Types.ObjectId(studentId),
-                access_granted: true
-            });
-            if (!enrollment) {
-                return res
-                    .status(403)
-                    .json({ success: false, message: 'Student not enrolled in this course' });
+            // 1. Validate IDs
+            if (!Types.ObjectId.isValid(courseId) || !Types.ObjectId.isValid(studentId)) {
+                throw new BaseError('Invalid courseId or studentId', 400);
             }
 
-            const course = await CourseModel.findById(courseId).lean();
-            if (!course) {
-                return res.status(404).json({ success: false, message: 'Course not found' });
+            // 2. Check enrollment
+            const enrolled = await CourseEnrollmentModel.findOne({
+                course_id: courseId,
+                student_id: studentId,
+                is_deleted: false
+            }).lean();
+            if (!enrolled) {
+                throw new BaseError('Student is not enrolled in this course', 404);
             }
 
-            // 2) Upsert the progress record for that student & course
-            const updated = await ProgressModel.findOneAndUpdate(
-                { userId: new Types.ObjectId(studentId), courseId: new Types.ObjectId(courseId) },
-                {
-                    $set: {
-                        courseGrade: { score, grade, computedAt: new Date() },
-                        completedAt: new Date(),
-                        credits: course.credits,
-                    }
-                },
-                { new: true, upsert: true }
-            ).lean();
+            // 3. Upsert the Progress record
+            const filter = {
+                courseId: new Types.ObjectId(courseId),
+                studentId: new Types.ObjectId(studentId)
+            };
+            const update: any = {
+                grade,
+                gpa,
+                progressPercent,
+                credits
+            };
+            // manage completedAt
+            if (progressPercent === 100) update.completedAt = new Date();
+            else update.completedAt = null;
 
-            return res.status(200).json({ success: true, data: updated });
+            const options = {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true
+            };
+
+            const progress = await ProgressModel
+                .findOneAndUpdate(filter, update, options)
+                .lean()
+                .exec();
+
+            // 4. Return
+            res.status(200).json({ success: true, data: progress });
         } catch (err) {
             next(err);
         }
-    }
+    };
+
 
 }
 
