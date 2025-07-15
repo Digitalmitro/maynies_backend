@@ -11,7 +11,7 @@ const CoursePaymentSchema = new Schema<ICoursePaymentDocument>(
         course_id: { type: Schema.Types.ObjectId, ref: 'Course', required: true },
 
         stripe_session_id: { type: String, index: true },
-        stripe_payment_intent_id: { type: String },
+        stripe_payment_intent_id: { type: String, unique: true, sparse: true },
         stripe_customer_id: { type: String },
 
         amount_paid: { type: Number, required: true },
@@ -33,6 +33,6 @@ const CoursePaymentSchema = new Schema<ICoursePaymentDocument>(
     }
 );
 
-CoursePaymentSchema.index({ stripe_payment_intent_id: 1 }, { unique: true });
+CoursePaymentSchema.index({ stripe_payment_intent_id: 1 }, { unique: true, sparse: true });
 
 export const CoursePaymentModel = model<ICoursePaymentDocument>('CoursePayment', CoursePaymentSchema);

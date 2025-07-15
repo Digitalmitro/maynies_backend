@@ -9,6 +9,7 @@ import { CourseEnrollmentModel } from '../models/courseEnrollment.model';
 import mongoose from 'mongoose';
 // import stripe from 'stripe';
 import Stripe from 'stripe';
+import { upsertPaymentAndEnrollment } from '../../../shared/utils/upsertPaymentRecord';
 export const createCheckoutSession = async (
     req: Request,
     res: Response,
@@ -85,15 +86,12 @@ export const createCheckoutSession = async (
             student_id: studentId,
             course_id,
             stripe_session_id: session.id,
-            stripe_payment_intent_id: session.payment_intent,
+            stripe_payment_intent_id: session.payment_intent || undefined,
             amount_paid: course.discount_price ?? course.price,
             currency: 'INR',
             status: 'pending' as const,
         };
 
-        // if (session.payment_intent) {
-        //     updatedData.stripe_payment_intent_id = session.payment_intent;
-        // }
 
         // 5) DB mein pending record upsert karo
         await CoursePaymentModel.findOneAndUpdate(
@@ -116,7 +114,6 @@ export const stripeWebhook = async (req: Request, res: Response) => {
     const sig = req.headers['stripe-signature'] as string;
     let event: Stripe.Event;
 
-    // 1️⃣ Verify signature & construct event
     try {
         event = stripe.webhooks.constructEvent(
             req.body,
@@ -129,27 +126,26 @@ export const stripeWebhook = async (req: Request, res: Response) => {
         return res.status(400).send(`Webhook Error: ${msg}`);
     }
 
-    // 2️⃣ Acknowledge receipt ASAP
     res.status(200).json({ received: true });
 
-    // 3️⃣ Handle relevant event types
     switch (event.type) {
         case 'checkout.session.completed':
-            await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+            await upsertPaymentAndEnrollment(event.data.object as Stripe.Checkout.Session);
             break;
 
         case 'payment_intent.succeeded':
-            await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+            await upsertPaymentAndEnrollment(event.data.object as Stripe.PaymentIntent, { cleanCart: false });
             break;
 
         case 'payment_intent.payment_failed':
-            await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+            console.warn(`⚠️ PaymentIntent failed: ${(event.data.object as Stripe.PaymentIntent).id}`);
             break;
 
         default:
             console.log(`ℹ️ Unhandled event type: ${event.type}`);
     }
 };
+
 
 export const getPaymentHistory = async (
     req: Request,
@@ -210,59 +206,32 @@ export const confirmSession = async (
 ) => {
     const sessionId = req.query.session_id as string;
     if (!sessionId) {
-        return res
-            .status(400)
-            .json({ success: false, message: 'No session_id provided' });
+        return res.status(400).json({ success: false, message: 'No session_id provided' });
     }
 
     try {
-        // DB-first check
-        const payment = await CoursePaymentModel.findOne({
+        const existing = await CoursePaymentModel.findOne({
             stripe_session_id: sessionId,
         });
-        if (payment?.status === 'succeeded') {
-            return res.json({
-                success: true,
-                message: 'Payment already confirmed in database',
-            });
+
+        if (existing?.status === 'succeeded') {
+            return res.json({ success: true, message: 'Payment already confirmed' });
         }
 
-        // Fallback to Stripe
         const session = await stripe.checkout.sessions.retrieve(sessionId);
         if (session.payment_status !== 'paid') {
-            return res.json({
-                success: false,
-                message: 'Payment not completed yet',
-            });
+            return res.json({ success: false, message: 'Payment not completed yet' });
         }
 
-        // Upsert by session OR payment_intent to avoid duplicate-key errors
-        await CoursePaymentModel.findOneAndUpdate(
-            {
-                $or: [
-                    { stripe_session_id: sessionId },
-                    { stripe_payment_intent_id: session.payment_intent },
-                ]
-            },
-            {
-                student_id: session.metadata!.student_id,
-                course_id: session.metadata!.course_id,
-                stripe_session_id: session.id,
-                stripe_payment_intent_id: session.payment_intent,
-                amount_paid: (session.amount_total ?? 0) / 100,
-                currency: session.currency,
-                status: 'succeeded' as const,
-                paid_at: new Date(),
-                receipt_url: (session as any).receipt_url || '',
-            },
-            { upsert: true, new: true }
-        );
+        await upsertPaymentAndEnrollment(session);
 
         return res.json({ success: true, message: 'Payment confirmed' });
     } catch (err) {
+        console.error('❌ confirmSession error:', err);
         next(err);
     }
 };
+
 
 
 
