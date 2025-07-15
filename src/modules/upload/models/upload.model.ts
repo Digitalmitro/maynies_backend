@@ -7,7 +7,7 @@ export enum UploadContext {
     STUDENT_RESUME = 'student_resume',
     STUDENT_DOCUMENT = 'student_document',
     STUDENT_AVATAR = 'student_avatar',
-
+    ACADEMIC_CALENDER_PDF = 'acedemic_calender_pdf',
     EMPLOYER_DOCUMENT = 'employer_document',
     EMPLOYER_AVATAR = 'employer_avatar',
     COURSE_MATERIAL = 'course_material',

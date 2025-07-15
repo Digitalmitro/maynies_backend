@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { UpdateStudentDemographicInput } from '../dtos/updateStudentDemographic.dto';
 import { StudentProfileModel } from '../models/studentProfile.model';
 import { UserProfileModel } from '../../user/models/userProfile.model';
+import { CourseEnrollmentModel } from '../../courses/models/courseEnrollment.model';
 
 class StudentProfileController {
 
@@ -115,6 +116,33 @@ class StudentProfileController {
         }
     }
 
+    async getEnrolledCourses(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user?.user._id;
+
+            // 💡 Fetch enrollments for this student
+            const enrollments = await CourseEnrollmentModel.find({
+                student_id: userId,
+                is_deleted: false,
+                payment_status: 'paid' // only show paid courses
+            })
+                .populate('course_id', 'title description thumbnail price') // Populate Course details
+                .sort({ ordered_at: -1 }); // Recent first
+
+            return res.status(200).json({
+                success: true,
+                message: 'Enrolled courses fetched successfully.',
+                data: enrollments
+            });
+        } catch (error: unknown) {
+            console.error('Error fetching enrolled courses:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to fetch enrolled courses.',
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    }
 
 }
 

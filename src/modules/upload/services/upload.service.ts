@@ -95,6 +95,7 @@ class UploadService {
         return {
             file_id: fileDoc._id.toString(),
             file_url: fileDoc.file_url,
+            user_id: fileDoc.owner_id,
             context: fileDoc.context,
             metadata: fileDoc.metadata,
         };
