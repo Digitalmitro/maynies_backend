@@ -23,6 +23,9 @@ class StudentProfileController {
                 StudentProfileModel.findOne({ user_id: userId }).lean(),
             ]);
 
+            console.log(studentProfile?.address);
+
+
             return res.status(200).json({
                 success: true,
                 data: {
@@ -52,18 +55,19 @@ class StudentProfileController {
 
             console.log(payload)
             // Split payload
-            const userProfileUpdate: Partial<{ first_Name: string; last_Name: string; avatar_url: string; gender: string }> = {};
-            const studentProfileUpdate: Partial<{ date_of_birth: Date; mothers_name?: string; race?: string; state?: string; city?: string }> = {};
+            const userProfileUpdate: Partial<{ first_name: string; last_name: string; avatar_url: string; gender: string }> = {};
+            const studentProfileUpdate: Partial<{ date_of_birth: Date; mothers_name?: string; race?: string; state?: string; city?: string, address: { state: string, city: string } }> = {};
 
             // fullName -> firstName, lastName
             if (payload.firstName) {
 
-                userProfileUpdate.first_Name = payload.firstName;
+                userProfileUpdate.first_name = payload.firstName;
             }
             if (payload.lastName) {
-                const [firstName, ...rest] = payload.firstName.trim().split(' ');
-                userProfileUpdate.first_Name = firstName;
-                userProfileUpdate.last_Name = rest.join(' ') || '';
+                // const [firstName, ...rest] = payload.firstName.trim().split(' ');
+                // userProfileUpdate.first_Name = firstName;
+                console.log(payload.lastName)
+                userProfileUpdate.last_name = payload.lastName;
             }
 
             if (payload.avatarUrl) {
@@ -84,10 +88,16 @@ class StudentProfileController {
                 studentProfileUpdate.race = payload.race;
             }
             if (payload.state) {
-                studentProfileUpdate.state = payload.state;
+                if (!studentProfileUpdate.address) {
+                    studentProfileUpdate.address = {} as { state: string; city: string };
+                }
+                studentProfileUpdate.address.state = payload.state;
             }
             if (payload.city) {
-                studentProfileUpdate.city = payload.city;
+                if (!studentProfileUpdate.address) {
+                    studentProfileUpdate.address = {} as { state: string; city: string };
+                }
+                studentProfileUpdate.address.city = payload.city;
             }
 
             // Perform updates in parallel
