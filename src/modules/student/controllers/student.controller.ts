@@ -56,7 +56,7 @@ class StudentProfileController {
             console.log(payload)
             // Split payload
             const userProfileUpdate: Partial<{ first_name: string; last_name: string; avatar_url: string; gender: string }> = {};
-            const studentProfileUpdate: Partial<{ date_of_birth: Date; mothers_name?: string; race?: string; state?: string; city?: string, address: { state: string, city: string } }> = {};
+            const studentProfileUpdate: Partial<{ date_of_birth: Date; mothers_name?: string; race?: string; state?: string; city?: string, address: { state: string, city: string, country: string } }> = {};
 
             // fullName -> firstName, lastName
             if (payload.firstName) {
@@ -89,15 +89,21 @@ class StudentProfileController {
             }
             if (payload.state) {
                 if (!studentProfileUpdate.address) {
-                    studentProfileUpdate.address = {} as { state: string; city: string };
+                    studentProfileUpdate.address = {} as { state: string; city: string, country: string };
                 }
                 studentProfileUpdate.address.state = payload.state;
             }
             if (payload.city) {
                 if (!studentProfileUpdate.address) {
-                    studentProfileUpdate.address = {} as { state: string; city: string };
+                    studentProfileUpdate.address = {} as { state: string; city: string, country: string };
                 }
                 studentProfileUpdate.address.city = payload.city;
+            }
+            if (payload.country) {
+                if (!studentProfileUpdate.address) {
+                    studentProfileUpdate.address = {} as { state: string; city: string, country: string };
+                }
+                studentProfileUpdate.address.country = payload.country;
             }
 
             // Perform updates in parallel

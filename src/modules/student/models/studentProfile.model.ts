@@ -13,6 +13,7 @@ export interface IStudentProfile extends Document {
     race?: string;
     address?: {
         street?: string;
+        country?: string;
         city?: string;
         state?: string;
         zip?: string;
@@ -56,6 +57,7 @@ const StudentProfileSchema = new Schema<IStudentProfile>(
         address: {
             street: { type: String, required: false },
             city: { type: String, required: false },
+            country: { type: String, required: false },
             state: { type: String, required: false },
             zip: { type: String, required: false },
         },
