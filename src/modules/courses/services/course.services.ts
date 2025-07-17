@@ -129,6 +129,9 @@ export class CourseService {
     }
 
     async getCourseBySlug(slug: string, userId: string) {
+
+        // console.log(`Fetching course by slug: ${slug} for user: ${userId}`);
+
         const course = await CourseModel.findOne({
             slug,
             is_active: true,
@@ -149,8 +152,13 @@ export class CourseService {
                 student_id: userId,
                 access_granted: true
             }).lean();
+
+            // console.log(enrollment);
+
             isEnrolled = Boolean(enrollment);
         }
+
+
         return {
             ...course,
             isEnrolled,

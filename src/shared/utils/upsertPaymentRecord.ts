@@ -21,15 +21,18 @@ export async function upsertPaymentAndEnrollment(
     const dbSession = await mongoose.startSession();
     dbSession.startTransaction();
     try {
-        // Upsert Payment Record
-        await CoursePaymentModel.findOneAndUpdate(
-            {
-                $or: [
-                    { stripe_session_id: (session as any).id },
-                    { stripe_payment_intent_id: (session as any).payment_intent || (session as any).id }
-                ]
-            },
-            {
+        // Check if payment already exists
+        const existingPayment = await CoursePaymentModel.findOne({
+            $or: [
+                { stripe_session_id: (session as any).id },
+                { stripe_payment_intent_id: (session as any).payment_intent || (session as any).id }
+            ]
+        }).session(dbSession);
+
+        if (existingPayment) {
+            console.log(`ℹ️ Payment already exists: ${existingPayment._id}`);
+        } else {
+            await CoursePaymentModel.create([{
                 student_id,
                 course_id,
                 amount_paid,
@@ -40,9 +43,8 @@ export async function upsertPaymentAndEnrollment(
                 receipt_url: (session as any).receipt_url || '',
                 status: 'succeeded',
                 paid_at: new Date(),
-            },
-            { upsert: true, new: true, session: dbSession }
-        );
+            }], { session: dbSession });
+        }
 
         // Upsert Enrollment
         await CourseEnrollmentModel.findOneAndUpdate(
@@ -53,24 +55,24 @@ export async function upsertPaymentAndEnrollment(
                 amount_paid,
                 payment_status: 'paid',
                 access_granted: true,
-                access_notes: `Granted via Stripe at ${new Date().toISOString()}`,
+                access_notes: `Granted via Stripe at ${new Date().toISOString()}`
             },
             { upsert: true, new: true, session: dbSession }
         );
 
-        // Optionally Clean Cart
         if (options.cleanCart) {
             await CourseCartModel.deleteOne({ student_id, course_id }).session(dbSession);
         }
 
         await dbSession.commitTransaction();
-        console.log(`✅ [Stripe] Payment & Enrollment upserted for ${student_id}`);
+        console.log(`✅ [DB] Payment & Enrollment upserted for ${student_id}`);
     } catch (err) {
         await dbSession.abortTransaction();
-        console.error('❌ [Stripe] DB transaction failed:', err);
+        console.error('❌ [DB] Transaction failed:', err);
         throw err;
     } finally {
         dbSession.endSession();
     }
 }
+
 

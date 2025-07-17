@@ -124,19 +124,19 @@ export const stripeWebhook = async (req: Request, res: Response) => {
         return res.status(400).send(`Webhook Error: ${msg}`);
     }
 
-    res.status(200).json({ received: true });
+    res.status(200).json({ received: true }); // Respond early to Stripe
 
     switch (event.type) {
         case 'checkout.session.completed':
-            await upsertPaymentAndEnrollment(event.data.object as Stripe.Checkout.Session);
+            await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
             break;
 
         case 'payment_intent.succeeded':
-            await upsertPaymentAndEnrollment(event.data.object as Stripe.PaymentIntent, { cleanCart: false });
+            await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
             break;
 
         case 'payment_intent.payment_failed':
-            console.warn(`⚠️ PaymentIntent failed: ${(event.data.object as Stripe.PaymentIntent).id}`);
+            await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
             break;
 
         default:
@@ -208,22 +208,28 @@ export const confirmSession = async (
     }
 
     try {
-        const existing = await CoursePaymentModel.findOne({
-            stripe_session_id: sessionId,
+        // Check DB first
+        const payment = await CoursePaymentModel.findOne({
+            stripe_session_id: sessionId
         });
 
-        if (existing?.status === 'succeeded') {
+        if (payment?.status === 'succeeded') {
             return res.json({ success: true, message: 'Payment already confirmed' });
         }
 
+        // Fallback to Stripe API
         const session = await stripe.checkout.sessions.retrieve(sessionId);
-        if (session.payment_status !== 'paid') {
-            return res.json({ success: false, message: 'Payment not completed yet' });
+        if (session.payment_status === 'paid') {
+            return res.json({
+                success: true,
+                message: 'Payment succeeded but not yet synced'
+            });
         }
 
-        await upsertPaymentAndEnrollment(session);
-
-        return res.json({ success: true, message: 'Payment confirmed' });
+        return res.json({
+            success: false,
+            message: 'Payment not completed yet'
+        });
     } catch (err) {
         console.error('❌ confirmSession error:', err);
         next(err);
@@ -232,68 +238,19 @@ export const confirmSession = async (
 
 
 
-
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-    const student_id = session.metadata?.student_id!;
-    const course_id = session.metadata?.course_id!;
-    const amount_paid = (session.amount_total ?? 0) / 100;
-    const currency = session.currency!;
-
-    const dbSession = await mongoose.startSession();
-    dbSession.startTransaction();
     try {
-        // Upsert Payment
-        await CoursePaymentModel.findOneAndUpdate(
-            { stripe_payment_intent_id: session.payment_intent },
-            {
-                student_id,
-                course_id,
-                amount_paid,
-                currency,
-                stripe_session_id: session.id,
-                stripe_payment_intent_id: session.payment_intent,
-                stripe_customer_id: session.customer as string,
-                receipt_url: (session as any).receipt_url || '',
-                status: 'succeeded',
-                paid_at: new Date(),
-            },
-            { upsert: true, new: true, session: dbSession }
-        );
-
-        // Upsert Enrollment
-        await CourseEnrollmentModel.findOneAndUpdate(
-            { student_id, course_id },
-            {
-                student_id,
-                course_id,
-                amount_paid,
-                payment_status: 'paid',
-                access_granted: true,
-                access_notes: `Granted via webhook at ${new Date().toISOString()}`,
-            },
-            { upsert: true, new: true, session: dbSession }
-        );
-
-        // Clean up Cart
-        await CourseCartModel.deleteOne({ student_id, course_id }).session(dbSession);
-
-        await dbSession.commitTransaction();
-        console.log(`✅ [Webhook] checkout.session.completed processed for ${student_id}`);
+        await upsertPaymentAndEnrollment(session, { cleanCart: true });
+        console.log(`✅ [Webhook] Processed checkout.session.completed for ${session.id}`);
     } catch (err) {
-        await dbSession.abortTransaction();
-        console.error('❌ [Webhook] DB transaction failed:', err);
-    } finally {
-        dbSession.endSession();
+        console.error('❌ [Webhook] Failed to process session:', err);
     }
 }
 
-// You can expand these if you need separate logic
 async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
-    console.log(`✅ PaymentIntent succeeded: ${pi.id}`);
-    // e.g. update order status if you rely on PaymentIntent events
+    console.log(`✅ [Webhook] PaymentIntent succeeded: ${pi.id}`);
 }
 
 async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {
-    console.warn(`⚠️ PaymentIntent failed: ${pi.id}`);
-    // e.g. flag payment as failed in your DB
+    console.warn(`⚠️ [Webhook] PaymentIntent failed: ${pi.id}`);
 }

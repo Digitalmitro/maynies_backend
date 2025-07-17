@@ -48,7 +48,7 @@ router.delete(
 // Get all published courses (public or user-specific)
 router.get(
     '/',
-    authenticate,
+    // authenticate,
     courseController.getAllCourses.bind(courseController)
 );
 

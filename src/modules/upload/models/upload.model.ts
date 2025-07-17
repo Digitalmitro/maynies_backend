@@ -11,7 +11,7 @@ export enum UploadContext {
     EMPLOYER_DOCUMENT = 'employer_document',
     EMPLOYER_AVATAR = 'employer_avatar',
     COURSE_MATERIAL = 'course_material',
-
+    STUDENT_PROFILE = "student_profile",
     ADMIN_POLICY_PDF = 'admin_policy_pdf',
     JOB_ATTACHMENT = 'job_attachment',
     GENERAL_ATTACHMENT = 'general_attachment' // optional future

@@ -206,6 +206,9 @@ class AuthService {
 
         // 2. Find user
         const user = await this.userService.findByEmail(email);
+
+        console.log(user);
+
         if (!user) throw new BaseError('Invalid email', 400); // 400 Bad Request
 
         // 3. Fetch latest unused OTP
@@ -241,6 +244,7 @@ class AuthService {
 
 
         const isProd = process.env.NODE_ENV === 'production';
+        console.log(accessToken, plainToken);
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,

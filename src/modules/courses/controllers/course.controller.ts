@@ -43,6 +43,8 @@ export class CourseController {
         try {
             const { slug } = req.params;
             const userId = req?.user?.user?._id;
+
+            console.log(`Fetching course by slug: ${slug} for user: ${userId}`);
             const course = await this.courseService.getCourseBySlug(slug, userId);
             res.status(200).json({ message: 'Course detail fetched', data: course });
         } catch (err) {
