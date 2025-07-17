@@ -1,23 +1,17 @@
-// models/employeeProfile.model.ts
 import { Schema, model, Document } from "mongoose";
-import { formatWithOptions } from "util";
+import { DocumentType, EmployeeProfileType } from "../types";
 
-export interface IEmployeeProfile extends Document {
-    user_id: Schema.Types.ObjectId;
-    designation: string;
-    date_of_joining: Date;
-    mobile_number: string;
-    work_number?: string;
-    location: string;
-    documents: [
-        {
-            name: string;
-            file_url: string;
-            uploaded_at: Date;
-            type?: string;
-        }
-    ]
-}
+
+
+export interface IEmployeeProfile extends Document, EmployeeProfileType { }
+
+const documentSchema = new Schema<DocumentType>({
+    name: { type: String },
+    file_url: { type: String },
+    uploaded_at: { type: Date, default: Date.now },
+    type: { type: String, default: "pdf" }
+});
+
 
 
 
@@ -32,20 +26,23 @@ const EmployeeProfileSchema = new Schema<IEmployeeProfile>(
             unique: true,
             index: true
         },
-        designation: { type: String, required: false },
-        date_of_joining: { type: Date, required: false },
-        mobile_number: { type: String, required: false },
+
+        designation: { type: String },
+        date_of_joining: { type: Date },
+        mobile_number: {
+            type: String,
+            match: [/^\+?[0-9]{10,15}$/, 'Invalid mobile number']
+        },
+
         work_number: { type: String, default: null },
-        location: { type: String, required: false },
-        documents: [
-            {
-                name: { type: String, required: false },
-                file_url: { type: String, required: false },
-                uploaded_at: { type: Date, default: Date.now },
-                type: { type: String, default: "pdf" }
-            }
-        ]
+        location: {
+            country: { type: String },
+            city: { type: String }
+        },
+        profile_picture: { type: String },
+        documents: [documentSchema]
     },
+
     {
         timestamps: {
             createdAt: "created_at",
