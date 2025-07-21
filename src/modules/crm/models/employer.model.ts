@@ -2,7 +2,6 @@ import { Schema, model, Document } from "mongoose";
 import { DocumentType, EmployeeProfileType } from "../types";
 
 
-
 export interface IEmployeeProfile extends Document, EmployeeProfileType { }
 
 const documentSchema = new Schema<DocumentType>({
@@ -11,10 +10,6 @@ const documentSchema = new Schema<DocumentType>({
     uploaded_at: { type: Date, default: Date.now },
     type: { type: String, default: "pdf" }
 });
-
-
-
-
 
 
 const EmployeeProfileSchema = new Schema<IEmployeeProfile>(
@@ -29,17 +24,13 @@ const EmployeeProfileSchema = new Schema<IEmployeeProfile>(
 
         designation: { type: String },
         date_of_joining: { type: Date },
-        mobile_number: {
-            type: String,
-            match: [/^\+?[0-9]{10,15}$/, 'Invalid mobile number']
-        },
+
 
         work_number: { type: String, default: null },
         location: {
             country: { type: String },
             city: { type: String }
         },
-        profile_picture: { type: String },
         documents: [documentSchema]
     },
 

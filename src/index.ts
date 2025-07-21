@@ -78,7 +78,6 @@ async function start() {
     app.use('/api/payment', paymentRoutes);
     app.use('/api/upload', uploadRoutes);
 
-
     app.get('/health', (req: Request, res: Response) => {
         res.status(200).json({ status: 'OK', message: 'Server is healthy!' });
     });

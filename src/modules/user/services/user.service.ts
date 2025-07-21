@@ -6,6 +6,7 @@ import { UserProfileModel } from '../models/userProfile.model';
 import { UserRoleModel } from '../models/userRole.model';
 import { EmployeeProfileModel } from '../../crm/models/employer.model';
 import { StudentProfileModel } from '../../student/models/studentProfile.model';
+import { LeaveService } from '../../crm/services/leave.service';
 
 export class UserService {
     /**
@@ -44,6 +45,8 @@ export class UserService {
                 await EmployeeProfileModel.create([{
                     user_id: user[0]._id,
                 }], { session });
+
+                await LeaveService.assignInitialLeaveBalance((user[0]._id as Types.ObjectId).toString());
             }
 
             if (input.roleName === 'student') {
