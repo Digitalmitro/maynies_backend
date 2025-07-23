@@ -444,7 +444,6 @@ class Leave {
         }
     }
 
-
 }
 
 export const leave = new Leave();
