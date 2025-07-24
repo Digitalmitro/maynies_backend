@@ -13,11 +13,20 @@ const router = Router();
 
 router.get("/", authenticate,
     requireRole("employer"),
-    (req: Request, res: Response) => { employerController.getMyProfile(req, res) });
+    (req: Request, res: Response) => {
+        employerController.getMyProfile(req, res)
+    });
 
 
 
-router.put("/", authenticate, requireRole("employer"), validate(updateEmployeeSchema), (req: Request, res: Response) => { employerController.updateMyProfile(req, res) });
+router.put("/", authenticate,
+    requireRole("employer"),
+    validate(updateEmployeeSchema),
+    (req: Request, res: Response) => {
+        employerController.updateMyProfile(req, res)
+    });
+
+
 
 // // 👑 Admin Routes
 // router.get("/admin/employees", authorize(["admin"]), EmployeeProfileController.getAllProfiles);
