@@ -3,7 +3,7 @@ import { ApprovalStep } from "../types";
 
 export interface FormSubmission extends Document {
     employeeId: string;
-    formTemplateId: string;
+    formTemplateId: Schema.Types.ObjectId;
     status: "Draft" | "Pending" | "Approved" | "Rejected" | "NeedsRevision";
     data: Record<string, any>;    // Dynamic payload from fields
     approvals: ApprovalStep[];
@@ -30,7 +30,11 @@ const approvalStepSchema = new Schema<ApprovalStep>({
 
 const formSubmissionSchema = new Schema<FormSubmission>({
     employeeId: { type: String, required: true },
-    formTemplateId: { type: String, required: true },
+    formTemplateId: {
+        type: Schema.Types.ObjectId,
+        ref: "FormTemplate", // 👈 IMPORTANT for populate to work
+        required: true
+    },
     status: {
         type: String,
         enum: ["Draft", "Pending", "Approved", "Rejected", "NeedsRevision"],

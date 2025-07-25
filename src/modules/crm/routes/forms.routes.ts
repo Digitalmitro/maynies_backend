@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import { authenticate } from "../../auth/middleware/auth.middleware";
 import { requireRole } from "../../../shared/middleware/roleBasedMiddleware";
 import formsController from "../controllers/form.controller";
@@ -24,6 +24,20 @@ router.get(
 );
 
 router.get(
+    "/submissions",
+    authenticate,
+    requireRole("employer"),
+    (req: Request, res: Response) => { formsController.listMySubmissions(req, res) }
+);
+
+router.get(
+    "/submission/:id",
+    authenticate,
+    requireRole("employer"),
+    (req: Request, res: Response) => { formsController.submissionsDetail(req, res) }
+);
+
+router.get(
     "/template/:id",
     authenticate,
     requireRole("employer", "admin"),
@@ -43,9 +57,18 @@ router.post(
     "/submit",
     authenticate,
     requireRole("employer"),
-    formsController.submitForm
+    (req: Request, res: Response) => { formsController.submitForm(req, res) }
 );
 
+router.patch(
+    "/submit/:id",
+    authenticate,
+    requireRole("employer"),
+    (req: Request, res: Response) => { formsController.updateFormSubmission(req, res) }
+);
+
+router.patch("/submissions/:id/status", authenticate,
+    requireRole("admin"), (req: Request, res: Response) => { formsController.updateSubmissionStatus(req, res) });
 // Get all submissions of logged-in employee
 // router.get(
 //     "/submissions",

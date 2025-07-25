@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import FormTemplate from "../models/formTemplates.model";
 import formSubmissionModel from "../models/formSubmission.model";
+import { Schema } from "mongoose";
 
 class FormsController {
 
@@ -59,7 +60,7 @@ class FormsController {
         }
     }
 
-    async submitForm(req: Request, res: Response): Promise<void> {
+    async submitForm(req: Request, res: Response) {
         try {
             const { formTemplateId, data } = req.body;
 
@@ -70,8 +71,73 @@ class FormsController {
                     success: false,
                     message: "Form not found or inactive"
                 });
+                return;
             }
+            for (const field of formTemplate.fields) {
+                const value = data[field.name];
 
+                // Required check
+                if (field.required && (value === undefined || value === null || value === "")) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `${field.label} is required.`
+                    });
+                }
+
+                // Skip empty optional fields
+                if (!field.required && (value === undefined || value === null || value === "")) {
+                    continue;
+                }
+
+                // Type-specific validation
+                if (field.type === "number") {
+                    const num = Number(value);
+                    if (isNaN(num)) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `${field.label} must be a number.`
+                        });
+                    }
+                    if (field.validations?.min !== undefined && num < field.validations.min) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `${field.label} must be at least ${field.validations.min}.`
+                        });
+                    }
+                    if (field.validations?.max !== undefined && num > field.validations.max) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `${field.label} must be at most ${field.validations.max}.`
+                        });
+                    }
+                }
+
+                if (field.type === "text") {
+                    if (typeof value !== "string") {
+                        return res.status(400).json({
+                            success: false,
+                            message: `${field.label} must be a string.`
+                        });
+                    }
+                    if (field.validations?.maxLength !== undefined && value.length > field.validations.maxLength) {
+                        return res.status(400).json({
+                            success: false,
+                            message: `${field.label} must be under ${field.validations.maxLength} characters.`
+                        });
+                    }
+                    if (field.validations?.pattern) {
+                        const regex = new RegExp(field.validations.pattern);
+                        if (!regex.test(value)) {
+                            return res.status(400).json({
+                                success: false,
+                                message: `${field.label} format is invalid.`
+                            });
+                        }
+                    }
+                }
+
+                // Add more cases here later for dropdown, file, checkbox, etc.
+            }
             // ✅ Save submission
             const newSubmission = await formSubmissionModel.create({
                 employeeId: req?.user?.user?._id,     // From authenticate middleware
@@ -98,6 +164,187 @@ class FormsController {
             });
         }
     }
+
+    async updateFormSubmission(req: Request, res: Response) {
+        try {
+            const employeeId = req?.user?.user?._id;
+            const submissionId = req.params.id;
+            const { data } = req.body;
+
+            if (!employeeId || !submissionId) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing employee or submission ID"
+                });
+            }
+
+            const existingSubmission = await formSubmissionModel.findOne({ _id: submissionId, employeeId });
+
+            if (!existingSubmission) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Submission not found"
+                });
+            }
+
+            // ✅ Optional status check
+            if (["Approved", "Rejected"].includes(existingSubmission.status)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You can't edit a form that is already approved or rejected"
+                });
+            }
+
+            // 🧠 Get related form template
+            const formTemplate = await FormTemplate.findById(existingSubmission.formTemplateId);
+            if (!formTemplate || !formTemplate.isActive) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Associated form template not found or inactive"
+                });
+            }
+
+            const updatedData = { ...existingSubmission.data };
+
+            for (const field of formTemplate.fields) {
+                const value = data[field.name];
+
+                // ❗ Only update if value is provided
+                if (value !== undefined && value !== null) {
+                    // Optional: Add validation logic again here if needed
+                    updatedData[field.name] = value;
+                }
+            }
+
+            existingSubmission.data = updatedData;
+            // Optional: status update logic if needed
+            // existingSubmission.status = "Pending";
+            await existingSubmission.save();
+
+            return res.status(200).json({
+                success: true,
+                message: "Submission updated successfully"
+            });
+
+        } catch (err) {
+            console.error("[updateFormSubmission] Error:", err);
+            res.status(500).json({
+                success: false,
+                message: "Failed to update submission",
+                error: err instanceof Error ? err.message : "Unknown error"
+            });
+        }
+    }
+
+
+
+    async listMySubmissions(req: Request, res: Response) {
+        try {
+            const employeeId = req?.user?.user?._id;
+
+            if (!employeeId) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Unauthorized: employee ID missing"
+                });
+            }
+
+            const submissions = await formSubmissionModel
+                .find({ employeeId })
+                .select("_id formTemplateId status")
+                .populate({
+                    path: "formTemplateId",
+                    select: "title", // Pull only the title
+                })
+                .sort({ createdAt: -1 })
+                .lean();
+
+            const result = submissions.map(sub => {
+                const formTemplate = sub.formTemplateId as unknown as { _id: string; title: string };
+                return {
+                    _id: sub._id,
+                    title: formTemplate?.title || "Untitled Form",
+                    status: sub.status
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                count: result.length,
+                submissions: result
+            });
+        } catch (err) {
+            console.error("[FormsController.listMySubmissions] Error:", err);
+            res.status(500).json({
+                success: false,
+                message: "Failed to fetch submissions",
+                error: err instanceof Error ? err.message : "Unknown error"
+            });
+        }
+    }
+
+
+
+    async submissionsDetail(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({ message: "Submission ID is required" });
+            }
+
+            const submission = await formSubmissionModel.findById(id);
+
+            if (!submission) {
+                return res.status(404).json({ message: "Form submission not found" });
+            }
+
+            return res.status(200).json({
+                message: "Form submission detail fetched successfully",
+                submission,
+            });
+        } catch (error) {
+            console.error("Error fetching form submission detail:", error);
+            return res.status(500).json({
+                message: "Internal Server Error",
+                error,
+            });
+        }
+    };
+
+
+    async updateSubmissionStatus(req: Request, res: Response) {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const validStatuses = ["Draft", "Pending", "Approved", "Rejected", "NeedsRevision"];
+
+        try {
+            if (!validStatuses.includes(status)) {
+                return res.status(400).json({ message: "Invalid status provided" });
+            }
+
+            const updatedSubmission = await formSubmissionModel.findByIdAndUpdate(
+                id,
+                { status },
+                { new: true }
+            );
+
+            if (!updatedSubmission) {
+                return res.status(404).json({ message: "Form submission not found" });
+            }
+
+            return res.status(200).json({
+                message: "Submission status updated successfully",
+                data: updatedSubmission,
+            });
+
+        } catch (err) {
+            console.error("Error updating submission status:", err);
+            return res.status(500).json({ message: "Server error while updating status" });
+        }
+    };
+
 
     async createFormTemplate(req: Request, res: Response): Promise<void> {
         try {
