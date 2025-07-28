@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 export interface DocumentType {
     name: string;
@@ -44,4 +44,31 @@ export interface ApprovalStep {
     action: "Pending" | "Approved" | "Rejected" | "NeedsRevision";
     date?: Date;
     comment?: string;
+}
+
+export interface LoanRequest {
+    employeeId: Schema.Types.ObjectId;
+    amount: number;
+    durationMonths: number;
+    reason?: string;
+    status: "pending" | "approved" | "rejected";
+    notes?: string;
+    createdAt: Date;
+    updatedAt: Date;
+    approvedAt: Date,
+    rejectedAt: Date,
+}
+
+export interface LoanRepayment {
+    loanRequestId: Schema.Types.ObjectId;
+    employeeId: Schema.Types.ObjectId;
+    month: string; // e.g., "2025-08"
+    amount: number;
+    status: "unpaid" | "paid";
+    paidAt?: Date;
+    comment?: string;
+    dueDate: Date;
+    paidBy?: Schema.Types.ObjectId; // ID of the user who made the payment
+    createdAt: Date;
+    updatedAt: Date;
 }
