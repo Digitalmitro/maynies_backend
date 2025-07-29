@@ -13,6 +13,7 @@ export interface EmployeeProfileType {
     date_of_joining?: Date;
     mobile_number?: string;
     work_number?: string;
+    salary_configured?: boolean;
     location?: {
         country?: string;
         city?: string;

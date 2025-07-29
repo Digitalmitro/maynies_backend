@@ -25,7 +25,7 @@ const EmployeeProfileSchema = new Schema<IEmployeeProfile>(
         designation: { type: String },
         date_of_joining: { type: Date },
 
-
+        salary_configured: { type: Boolean, default: false },
         work_number: { type: String, default: null },
         location: {
             country: { type: String },
