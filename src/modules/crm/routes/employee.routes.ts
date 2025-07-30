@@ -39,7 +39,7 @@ router.patch(
 router.get("/admin/employees",
     authenticate,
     requireRole("admin"),
-    (req: Request, res: Response) => { employerController.getAllProfiles(req, res) });
+    (req: Request, res: Response) => { employerController.getAllEmployee(req, res) });
 
 
 router.get("/admin/employees/:id",

@@ -159,20 +159,35 @@ export class EmployerController {
         }
     };
 
-    async getAllProfiles(req: Request, res: Response) {
-        try {
-            // ⚡ Fetch only the minimal fields
-            const employees = await EmployeeProfileModel.find({}, { designation: 1 })
-                .populate({
-                    path: "user_id",
-                    select: "name", // only name
-                })
-                .lean();
 
-            // 🎯 Shape the result
-            const minimalData = employees.map((emp: any) => ({
-                id: emp.user_id?._id,
-                name: emp.user_id?.name,
+
+
+    async getAllEmployee(req: Request, res: Response) {
+        try {
+            // 1️⃣ Fetch employee profiles (only designation and user_id)
+            const employees = await EmployeeProfileModel.find({}, { designation: 1, user_id: 1 }).lean();
+
+            const userIds = employees.map(emp => emp.user_id);
+
+            // 2️⃣ Fetch user profiles for those employees
+            const userProfiles = await UserProfileModel.find({
+                user_id: { $in: userIds }
+            }, {
+                user_id: 1,
+                first_name: 1,
+                last_name: 1
+            }).lean();
+
+            // 3️⃣ Map for quick access
+            const profileMap = new Map(userProfiles.map(up => [
+                String(up.user_id),
+                `${up.first_name ?? ""} ${up.last_name ?? ""}`.trim()
+            ]));
+
+            // 4️⃣ Merge result
+            const minimalData = employees.map(emp => ({
+                id: emp.user_id,
+                name: profileMap.get(String(emp.user_id)) || "N/A",
                 designation: emp.designation
             }));
 
@@ -182,7 +197,7 @@ export class EmployerController {
             });
 
         } catch (err: any) {
-            console.error("❌ Error in getEmployeesMiniList:", err.message);
+            console.error("❌ Error in getAllEmployeesMinimal:", err.message);
             return res.status(500).json({
                 success: false,
                 message: "Server error while fetching minimal employee list."
@@ -190,11 +205,13 @@ export class EmployerController {
         }
     }
 
+
+
     async getEmployeeById(req: Request, res: Response) {
         try {
-            const { id } = req.params; // user_id
+            const { id } = req.params; // This is user_id (from User model)
 
-            // 🔎 Fetch employee profile with user
+            // 1️⃣ Fetch Employee Profile with basic User info
             const employeeProfile = await EmployeeProfileModel.findOne({ user_id: id })
                 .populate({
                     path: "user_id",
@@ -205,19 +222,22 @@ export class EmployerController {
             if (!employeeProfile) {
                 return res.status(404).json({
                     success: false,
-                    message: "Employee profile not found."
+                    message: "❌ Employee profile not found."
                 });
             }
 
-            // 🔍 Fetch user profile & salary
+            // 2️⃣ Fetch User Profile & Salary concurrently
             const [userProfile, salary] = await Promise.all([
                 UserProfileModel.findOne({ user_id: id }).lean(),
                 EmployeeSalaryModel.findOne({ employee_id: id }).lean()
             ]);
 
+            // 3️⃣ Compose Final Response
             const responsePayload = {
-                ...employeeProfile,
-                user: employeeProfile.user_id || {},
+                employee_profile: {
+                    ...employeeProfile,
+                    user: employeeProfile.user_id || {}
+                },
                 user_profile: userProfile || {},
                 salary: salary || {}
             };
@@ -231,7 +251,7 @@ export class EmployerController {
             console.error("❌ Error in getEmployeeById:", err.message);
             return res.status(500).json({
                 success: false,
-                message: "Server error while fetching employee detail."
+                message: "💥 Server error while fetching employee details."
             });
         }
     }
