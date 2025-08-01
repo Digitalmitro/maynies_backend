@@ -45,9 +45,6 @@ router.get("/:id",
 
 
 
-
-
-
 router.post("/",
     authenticate,
     requireRole('employer'),
@@ -82,12 +79,14 @@ router.post(
     (req: Request, res: Response) => { loan.payRepayment(req, res) }
 );
 
+
 router.get(
     "/:id/check-completion",
     authenticate,
     requireRole("employer"),
     (req: Request, res: Response) => { loan.checkLoanCompletion(req, res) }
 );
+
 
 
 
