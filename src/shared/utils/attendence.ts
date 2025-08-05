@@ -7,6 +7,7 @@ export function getOfficeStartTime(date: Date = new Date()): Date {
     start.setHours(OFFICE_START_HOUR, OFFICE_START_MINUTE, 0, 0);
     return start;
 }
+
 export function parseBool(value: string): boolean | null {
     if (value.toLowerCase() === "true") return true;
     if (value.toLowerCase() === "false") return false;
