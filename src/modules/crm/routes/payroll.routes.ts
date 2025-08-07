@@ -7,7 +7,7 @@ import payrollController from "../controllers/payroll.controller";
 const router = Router();
 
 router.post(
-  "/generate/:employeeId",
+  "/generate",
   authenticate,
   requireRole("employer"),
   (req: Request, res: Response) => {
@@ -62,3 +62,4 @@ router.post(
 //   requireRole("admin"),
 //   payrollController.deletePayroll
 // );
+export default router;

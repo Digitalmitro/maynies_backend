@@ -4,7 +4,7 @@ import leaveRouter from "./leave.routes";
 import formRouter from "./forms.routes";
 import loanRouter from "./loan.routes";
 import attendenceRouter from "./attendence.routes";
-import formController from "../controllers/form.controller";
+import payrollRouter from "./payroll.routes";
 
 
 const router = Router();
@@ -15,6 +15,7 @@ router.use("/leave", leaveRouter)
 router.use("/form", formRouter)
 router.use("/loan", loanRouter)
 router.use("/attendence", attendenceRouter)
+router.use("/payroll", payrollRouter)
 
 
 export default router;

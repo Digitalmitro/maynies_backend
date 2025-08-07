@@ -16,7 +16,7 @@ const payrollSchema = new mongoose.Schema({
   deductions: { type: Number, default: 0 },
   netSalary: { type: Number, required: true },
 
-  leaveRecords: [{ type: mongoose.Schema.Types.ObjectId, ref: "LeaveRequest" }],
+  // leaveRecords: [{ type: mongoose.Schema.Types.ObjectId, ref: "LeaveRequest" }],
 
   generatedAt: { type: Date, default: Date.now },
   status: { type: String, enum: ["pending", "paid"], default: "pending" },
