@@ -9,6 +9,7 @@ import admissionRoutes from './admission.route';
 import demographicsRoutes from './demographics.route';
 import progresRoutes from './progress.route';
 import acedemicRoutes from './academic.route';
+import plansRoutes from './plans.route';
 // import dashboardRoutes from './dashboard.routes';
 // import enrollmentRoutes from './enrollment.routes';
 // import paymentRoutes from './payment.routes';
@@ -24,6 +25,8 @@ router.use('/admission', admissionRoutes);     // /api/student/admission
 router.use('/demographics', demographicsRoutes);     // /api/student/dashboard
 router.use('/progress', progresRoutes); // /api/student/enrollments
 router.use('/acedemic', acedemicRoutes); // /api/student/enrollments
+router.use('/plans', plansRoutes); // /api/student/enrollments
+
 router.get(
     '/enrolled',
     authenticate,
