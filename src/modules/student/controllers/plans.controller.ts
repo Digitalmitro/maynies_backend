@@ -135,7 +135,49 @@ class PlanController {
       next(error);
     }
   }
+async getPlansForAdmin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        status, // optional: active/inactive
+        search, // optional: search by name
+        page = 1,
+        limit = 10,
+      } = req.query as {
+        status?: string;
+        search?: string;
+        page?: string | number;
+        limit?: string | number;
+      };
 
+      const filter: any = {};
+      if (status) filter.status = status;
+      if (search) filter.name = { $regex: search, $options: "i" };
+
+      const skip = (Number(page) - 1) * Number(limit);
+
+      const [plans, total] = await Promise.all([
+        Plan.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(Number(limit))
+          .lean(),
+        Plan.countDocuments(filter),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        data: plans,
+        pagination: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
   //student
 //     async createStudentPlan(
 //     req:Request<{}, {},CreateStudentPlanDto>,

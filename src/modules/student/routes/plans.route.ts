@@ -24,9 +24,18 @@ router.post(
   "/admin",
   authenticate,
   requireRole("admin"),
-  validate(CreatePlanSchema as unknown as ZodSchema<CreatePlanDto> ),
+  validate(CreatePlanSchema as unknown as ZodSchema<CreatePlanDto>),
   (req: Request, res: Response, next: NextFunction) => {
     planController.createPlan(req, res, next);
+  }
+);
+
+router.get(
+  "/admin",
+  authenticate,
+  requireRole("admin"), // Only admin role can access
+  (req: Request, res: Response, next: NextFunction) => {
+    planController.getPlansForAdmin(req, res, next);
   }
 );
 
@@ -35,12 +44,12 @@ router.post(
   authenticate,
   requireRole("student"),
   validate(CreateStudentPlanSchema),
-  (req: Request, res: Response, next: NextFunction) =>{
-   console.log("Creating student plan...");
-  res.status(200).json({
-    message: "Student plan creation endpoint hit successfully",
+  (req: Request, res: Response, next: NextFunction) => {
+    console.log("Creating student plan...");
+    res.status(200).json({
+      message: "Student plan creation endpoint hit successfully",
     });
-   }
+  }
 );
 
 // router.post('/', authenticate, requireRole('student'), validate(CreateAdmissionSchema), (req, res, next) => { admissionController.createAdmission(req, res, next) });
