@@ -4,6 +4,9 @@ import { Plan } from "../models/plan.model";
 import { CreateStudentPlanDto } from "../dtos/studentEnrollPlan.dto";
 import { StudentProfileModel } from "../models/studentProfile.model";
 import { StudentPlan } from "../models/studentPlan.model";
+import { Payment } from "../models/planPayment.model";
+import { createOfflinePaymentSchema } from "../dtos/studentPaymentRequest.dto";
+import mongoose from "mongoose";
 
 class PlanController {
   // admin
@@ -335,23 +338,19 @@ class PlanController {
         chosenMode === "installments" &&
         !(plan.paymentMode === "installments" || plan.paymentMode === "both")
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Plan does not support installments",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Plan does not support installments",
+        });
       }
       if (
         chosenMode === "one_time" &&
         !(plan.paymentMode === "one_time" || plan.paymentMode === "both")
       ) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Plan does not support one-time payments",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Plan does not support one-time payments",
+        });
       }
 
       // Duplicate enrollment check
@@ -414,20 +413,82 @@ class PlanController {
     }
   }
 
-  async planDetailForStudent (req: Request, res: Response, next: NextFunction)  {
-  try {
-    const { id } = req.params;
-    const plan = await Plan.findById(id).lean();
+  async planDetailForStudent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const plan = await Plan.findById(id).lean();
 
-    if (!plan || plan.status !== "active") {
-      return res.status(404).json({ success: false, error: "Plan not found" });
+      if (!plan || plan.status !== "active") {
+        return res
+          .status(404)
+          .json({ success: false, error: "Plan not found" });
+      }
+
+      res.json({ success: true, plan });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getEnrollmentPlans(req: Request, res: Response) {
+    const studentId = req.user?.user?._id;
+    console.log(studentId);
+    res.json({
+      success: true,
+      message: "Enrollment plans fetched successfully",
+      data: {
+        studentId,
+        plans: [], // Fetch and return actual plans here
+      },
+    });
+  }
+
+  async createOfflinePayment(req: Request, res: Response) {
+    try {
+      // 1. Validate payload with Zod
+      const parsedData = createOfflinePaymentSchema.parse(req.body);
+      // 2. Create payment record
+      const payment = await Payment.create({
+        ...parsedData,
+        status: "pending", // offline payment = approval needed
+        paymentDate: new Date(),
+      });
+
+      return res.status(201).json({
+        message: "Offline payment request submitted successfully",
+        data: payment,
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return res.status(400).json({
+          message: "Validation failed",
+          errors: error.errors,
+        });
+      }
+      console.error("Create Offline Payment Error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  async approveOfflinePayment (req: Request, res: Response) {
+  try {
+    const { paymentId } = req.params;
+    const payment = await Payment.findByIdAndUpdate(
+      paymentId,
+      { status: "approved", approvedAt: new Date() },
+      { new: true }
+    );
+
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Payment not found" });
     }
 
-    res.json({ success: true, plan });
+    res.json({ success: true, data: payment });
   } catch (err) {
-    next(err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
-}
+};
+
 }
 
 export const planController = new PlanController();

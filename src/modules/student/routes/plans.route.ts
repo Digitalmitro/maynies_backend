@@ -12,6 +12,7 @@ import { planController } from "../controllers/plans.controller";
 import { CreatePlanDto, CreatePlanSchema } from "../dtos/createPlan.dto";
 import { ZodSchema } from "zod";
 import { CreateStudentPlanSchema } from "../dtos/studentEnrollPlan.dto";
+import { createOfflinePaymentSchema } from "../dtos/studentPaymentRequest.dto";
 
 const router = Router();
 // Protect all routes: only students
@@ -42,6 +43,22 @@ router.get(
 // student routes
 
 router.get(
+  "/enrollments",
+  authenticate,
+  requireRole("student"),
+  (req: Request, res: Response, next: NextFunction) => {
+    planController.getEnrollmentPlans(req, res);
+
+    // res.status(501).json({
+    //   status: "error",
+    //   message: "This endpoint is not implemented yet",
+    // });
+    // return;
+  }
+);
+
+
+router.get(
   "/",
   authenticate,
   requireRole("student"),
@@ -67,6 +84,18 @@ router.post(
   validate(CreateStudentPlanSchema),
   (req: Request, res: Response, next: NextFunction) => {
     planController.createStudentPlan(req, res, next);
+  }
+);
+
+
+
+router.post(
+  "/payment/offline",
+  authenticate,
+  requireRole("student"),
+  validate(createOfflinePaymentSchema),
+  (req: Request, res: Response) => {
+    planController.createOfflinePayment(req, res);
   }
 );
 
