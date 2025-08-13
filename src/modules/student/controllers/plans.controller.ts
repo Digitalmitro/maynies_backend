@@ -308,6 +308,9 @@ class PlanController {
 
       // Student ID decide karo
       const studentId = caller?.user?._id;
+
+      console.log(studentId);
+      
       if (!studentId) {
         return res.status(403).json({
           success: false,
@@ -317,7 +320,7 @@ class PlanController {
 
       // Plan aur Student existence check
       const [student, plan] = await Promise.all([
-        StudentProfileModel.findById(studentId),
+       StudentProfileModel.findOne({ user_id: studentId }),
         Plan.findById(planId).lean(),
       ]);
 
