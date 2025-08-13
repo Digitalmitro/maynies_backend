@@ -40,6 +40,16 @@ router.get(
   }
 );
 
+router.get(
+  "/admin/payment/:paymentId/approve",
+  authenticate,
+  requireRole("admin"), // Only admin role can access
+  (req: Request, res: Response, next: NextFunction) => {
+    planController.approveOfflinePayment(req, res);
+  }
+);
+
+
 // student routes
 
 router.get(
