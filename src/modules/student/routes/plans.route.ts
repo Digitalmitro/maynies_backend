@@ -11,7 +11,7 @@ import { UpdateAdmissionStatusSchema } from "../dtos/updateAdmissionStatus.dto";
 import { planController } from "../controllers/plans.controller";
 import { CreatePlanDto, CreatePlanSchema } from "../dtos/createPlan.dto";
 import { ZodSchema } from "zod";
-import { CreateStudentPlanSchema } from "../dtos/CreateStudentPlan.dto";
+import { CreateStudentPlanSchema } from "../dtos/studentEnrollPlan.dto";
 
 const router = Router();
 // Protect all routes: only students
@@ -39,16 +39,34 @@ router.get(
   }
 );
 
+// student routes
+
+router.get(
+  "/",
+  authenticate,
+  requireRole("student"),
+  validate(CreateStudentPlanSchema),
+  (req: Request, res: Response, next: NextFunction) => {
+    planController.getPlansForStudent(req, res, next);
+  }
+);
+router.get(
+  "/:id",
+  authenticate,
+  requireRole("student"),
+  validate(CreateStudentPlanSchema),
+  (req: Request, res: Response, next: NextFunction) => {
+    planController.planDetailForStudent(req, res, next);
+  }
+);
+
 router.post(
   "/",
   authenticate,
   requireRole("student"),
   validate(CreateStudentPlanSchema),
   (req: Request, res: Response, next: NextFunction) => {
-    console.log("Creating student plan...");
-    res.status(200).json({
-      message: "Student plan creation endpoint hit successfully",
-    });
+    planController.createStudentPlan(req, res, next);
   }
 );
 

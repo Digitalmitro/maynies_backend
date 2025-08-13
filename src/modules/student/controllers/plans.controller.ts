@@ -1,12 +1,12 @@
 import { NextFunction, Response, Request } from "express";
 import { CreatePlanDto } from "../dtos/createPlan.dto";
 import { Plan } from "../models/plan.model";
-import { CreateStudentPlanDto } from "../dtos/CreateStudentPlan.dto";
+import { CreateStudentPlanDto } from "../dtos/studentEnrollPlan.dto";
+import { StudentProfileModel } from "../models/studentProfile.model";
+import { StudentPlan } from "../models/studentPlan.model";
 
 class PlanController {
-
-
-    // admin
+  // admin
   async createPlan(
     req: Request<{}, {}, CreatePlanDto>,
     res: Response,
@@ -135,7 +135,7 @@ class PlanController {
       next(error);
     }
   }
-async getPlansForAdmin(req: Request, res: Response, next: NextFunction) {
+  async getPlansForAdmin(req: Request, res: Response, next: NextFunction) {
     try {
       const {
         status, // optional: active/inactive
@@ -179,122 +179,255 @@ async getPlansForAdmin(req: Request, res: Response, next: NextFunction) {
     }
   }
   //student
-//     async createStudentPlan(
-//     req:Request<{}, {},CreateStudentPlanDto>,
-//     res: Response,
-//     next: NextFunction
-//   ) {
-//     try {
-//       const { planId, chosenMode } = req.body;
-//       const caller = req.user;
-//       const studentIdFromBody = req.body.studentId;
+  //     async createStudentPlan(
+  //     req:Request<{}, {},CreateStudentPlanDto>,
+  //     res: Response,
+  //     next: NextFunction
+  //   ) {
+  //     try {
+  //       const { planId, chosenMode } = req.body;
+  //       const caller = req.user;
+  //       const studentIdFromBody = req.body.studentId;
 
-//       // decide studentId
-//       let studentId: string | undefined;
-//       if (caller && caller.role === "student") {
-//         studentId = caller.id;
-//       } else if (studentIdFromBody) {
-//         studentId = studentIdFromBody;
-//       } else {
-//         return res.status(400).json({
-//           success: false,
-//           error: "studentId is required when called by non-student",
-//         });
-//       }
+  //       // decide studentId
+  //       let studentId: string | undefined;
+  //       if (caller && caller.role === "student") {
+  //         studentId = caller.id;
+  //       } else if (studentIdFromBody) {
+  //         studentId = studentIdFromBody;
+  //       } else {
+  //         return res.status(400).json({
+  //           success: false,
+  //           error: "studentId is required when called by non-student",
+  //         });
+  //       }
 
-//       // basic existence checks
-//       const [student, plan] = await Promise.all([
-//         Student.findById(studentId),
-//         Plan.findById(planId).lean(),
-//       ]);
+  //       // basic existence checks
+  //       const [student, plan] = await Promise.all([
+  //         Student.findById(studentId),
+  //         Plan.findById(planId).lean(),
+  //       ]);
 
-//       if (!student) {
-//         return res.status(404).json({ success: false, error: "Student not found" });
-//       }
-//       if (!plan || plan.status !== "active") {
-//         return res.status(404).json({ success: false, error: "Plan not found or not active" });
-//       }
+  //       if (!student) {
+  //         return res.status(404).json({ success: false, error: "Student not found" });
+  //       }
+  //       if (!plan || plan.status !== "active") {
+  //         return res.status(404).json({ success: false, error: "Plan not found or not active" });
+  //       }
 
-//       // chosenMode compatibility with plan.paymentMode
-//       // plan.paymentMode values: "one_time" | "installments" | "both"
-//       if (chosenMode === "installments" && !(plan.paymentMode === "installments" || plan.paymentMode === "both")) {
-//         return res.status(400).json({
-//           success: false,
-//           error: "Plan does not support installments",
-//         });
-//       }
-//       if (chosenMode === "one_time" && !(plan.paymentMode === "one_time" || plan.paymentMode === "both")) {
-//         return res.status(400).json({
-//           success: false,
-//           error: "Plan does not support one-time payments",
-//         });
-//       }
+  //       // chosenMode compatibility with plan.paymentMode
+  //       // plan.paymentMode values: "one_time" | "installments" | "both"
+  //       if (chosenMode === "installments" && !(plan.paymentMode === "installments" || plan.paymentMode === "both")) {
+  //         return res.status(400).json({
+  //           success: false,
+  //           error: "Plan does not support installments",
+  //         });
+  //       }
+  //       if (chosenMode === "one_time" && !(plan.paymentMode === "one_time" || plan.paymentMode === "both")) {
+  //         return res.status(400).json({
+  //           success: false,
+  //           error: "Plan does not support one-time payments",
+  //         });
+  //       }
 
-//       // prevent duplicate active enrollment
-//       const already = await StudentPlan.findOne({
-//         studentId,
-//         planId,
-//         status: "active",
-//       });
-//       if (already) {
-//         return res.status(409).json({
-//           success: false,
-//           error: "Student is already enrolled in this plan",
-//         });
-//       }
+  //       // prevent duplicate active enrollment
+  //       const already = await StudentPlan.findOne({
+  //         studentId,
+  //         planId,
+  //         status: "active",
+  //       });
+  //       if (already) {
+  //         return res.status(409).json({
+  //           success: false,
+  //           error: "Student is already enrolled in this plan",
+  //         });
+  //       }
 
-//       // If installments chosen, ensure plan has schedule; snapshot it into studentPlan
-//       let installmentSnapshot = undefined;
-//       if (chosenMode === "installments") {
-//         const planInst = plan.installmentAmounts;
-//         if (!planInst || !Array.isArray(planInst) || planInst.length === 0) {
-//           return res.status(400).json({
-//             success: false,
-//             error: "Selected plan does not have installment schedule configured",
-//           });
-//         }
+  //       // If installments chosen, ensure plan has schedule; snapshot it into studentPlan
+  //       let installmentSnapshot = undefined;
+  //       if (chosenMode === "installments") {
+  //         const planInst = plan.installmentAmounts;
+  //         if (!planInst || !Array.isArray(planInst) || planInst.length === 0) {
+  //           return res.status(400).json({
+  //             success: false,
+  //             error: "Selected plan does not have installment schedule configured",
+  //           });
+  //         }
 
-//         // optional sanity checks (amounts positive etc.)
-//         const anyNonPositive = planInst.some((i: any) => !i.amount || i.amount <= 0);
-//         if (anyNonPositive) {
-//           return res.status(400).json({
-//             success: false,
-//             error: "Plan installment amounts must be positive numbers",
-//           });
-//         }
+  //         // optional sanity checks (amounts positive etc.)
+  //         const anyNonPositive = planInst.some((i: any) => !i.amount || i.amount <= 0);
+  //         if (anyNonPositive) {
+  //           return res.status(400).json({
+  //             success: false,
+  //             error: "Plan installment amounts must be positive numbers",
+  //           });
+  //         }
 
-//         // snapshot to save schedule for this student (paid:false initially)
-//         installmentSnapshot = planInst.map((it: any) => ({
-//           amount: it.amount,
-//           dueDate: it.dueDate,
-//           paid: false,
-//           paidAmount: 0,
-//           paidAt: null,
-//         }));
-//       }
+  //         // snapshot to save schedule for this student (paid:false initially)
+  //         installmentSnapshot = planInst.map((it: any) => ({
+  //           amount: it.amount,
+  //           dueDate: it.dueDate,
+  //           paid: false,
+  //           paidAmount: 0,
+  //           paidAt: null,
+  //         }));
+  //       }
 
-//       // create studentPlan
-//       const studentPlanDoc = await StudentPlan.create({
-//         studentId,
-//         planId,
-//         chosenMode,
-//         assignedAt: new Date(),
-//         status: "active",
-//         // NOTE: If your StudentPlan schema doesn't have `installmentSchedule` yet,
-//         // add an optional field there. See note below.
-//         installmentSchedule: installmentSnapshot,
-//       });
+  //       // create studentPlan
+  //       const studentPlanDoc = await StudentPlan.create({
+  //         studentId,
+  //         planId,
+  //         chosenMode,
+  //         assignedAt: new Date(),
+  //         status: "active",
+  //         // NOTE: If your StudentPlan schema doesn't have `installmentSchedule` yet,
+  //         // add an optional field there. See note below.
+  //         installmentSchedule: installmentSnapshot,
+  //       });
 
-//       return res.status(201).json({
-//         success: true,
-//         message: "Student enrolled in plan successfully",
-//         studentPlan: studentPlanDoc,
-//       });
-//     } catch (err) {
-//       next(err);
-//     }
-//   }
+  //       return res.status(201).json({
+  //         success: true,
+  //         message: "Student enrolled in plan successfully",
+  //         studentPlan: studentPlanDoc,
+  //       });
+  //     } catch (err) {
+  //       next(err);
+  //     }
+  //   }
+  async createStudentPlan(
+    req: Request<{}, {}, CreateStudentPlanDto>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { planId, chosenMode } = req.body;
+      const caller = req.user; // user object from authenticate middleware
 
+      // Student ID decide karo
+      const studentId = caller?.user?._id;
+      if (!studentId) {
+        return res.status(403).json({
+          success: false,
+          error: "Only students can enroll in plans",
+        });
+      }
+
+      // Plan aur Student existence check
+      const [student, plan] = await Promise.all([
+        StudentProfileModel.findById(studentId),
+        Plan.findById(planId).lean(),
+      ]);
+
+      if (!student) {
+        return res
+          .status(404)
+          .json({ success: false, error: "Student not found" });
+      }
+      if (!plan || plan.status !== "active") {
+        return res.status(404).json({
+          success: false,
+          error: "Plan not found or inactive",
+        });
+      }
+
+      // Payment mode compatibility check
+      if (
+        chosenMode === "installments" &&
+        !(plan.paymentMode === "installments" || plan.paymentMode === "both")
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error: "Plan does not support installments",
+          });
+      }
+      if (
+        chosenMode === "one_time" &&
+        !(plan.paymentMode === "one_time" || plan.paymentMode === "both")
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            error: "Plan does not support one-time payments",
+          });
+      }
+
+      // Duplicate enrollment check
+      const alreadyEnrolled = await StudentPlan.findOne({
+        studentId,
+        planId,
+        status: "active",
+      });
+      if (alreadyEnrolled) {
+        return res.status(409).json({
+          success: false,
+          error: "Already enrolled in this plan",
+        });
+      }
+
+      // Installments snapshot agar mode installments hai
+      let installmentSnapshot = undefined;
+      if (chosenMode === "installments") {
+        if (!plan.installmentAmounts || plan.installmentAmounts.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: "No installment schedule found for this plan",
+          });
+        }
+        installmentSnapshot = plan.installmentAmounts.map((it: any) => ({
+          amount: it.amount,
+          dueDate: it.dueDate,
+          paid: false,
+          paidAmount: 0,
+          paidAt: null,
+        }));
+      }
+
+      // StudentPlan create
+      const studentPlan = await StudentPlan.create({
+        studentId,
+        planId,
+        chosenMode,
+        assignedAt: new Date(),
+        status: "active",
+        installmentSchedule: installmentSnapshot, // optional field if in schema
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Enrolled successfully",
+        data: studentPlan,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getPlansForStudent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const plans = await Plan.find({ status: "active" }).lean();
+      res.json({ success: true, plans });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async planDetailForStudent (req: Request, res: Response, next: NextFunction)  {
+  try {
+    const { id } = req.params;
+    const plan = await Plan.findById(id).lean();
+
+    if (!plan || plan.status !== "active") {
+      return res.status(404).json({ success: false, error: "Plan not found" });
+    }
+
+    res.json({ success: true, plan });
+  } catch (err) {
+    next(err);
+  }
+}
 }
 
 export const planController = new PlanController();
