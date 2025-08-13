@@ -45,7 +45,7 @@ router.get(
   "/",
   authenticate,
   requireRole("student"),
-  validate(CreateStudentPlanSchema),
+  // validate(CreateStudentPlanSchema),
   (req: Request, res: Response, next: NextFunction) => {
     planController.getPlansForStudent(req, res, next);
   }
@@ -54,7 +54,7 @@ router.get(
   "/:id",
   authenticate,
   requireRole("student"),
-  validate(CreateStudentPlanSchema),
+  // validate(CreateStudentPlanSchema),
   (req: Request, res: Response, next: NextFunction) => {
     planController.planDetailForStudent(req, res, next);
   }
