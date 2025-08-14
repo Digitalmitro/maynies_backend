@@ -433,17 +433,37 @@ class PlanController {
     }
   }
 
-  async getEnrollmentPlans(req: Request, res: Response) {
-    const studentId = req.user?.user?._id;
-    console.log(studentId);
-    res.json({
-      success: true,
-      message: "Enrollment plans fetched successfully",
-      data: {
-        studentId,
-        plans: [], // Fetch and return actual plans here
-      },
-    });
+ async getEnrollmentPlans(req: Request, res: Response) {
+    try {
+      const studentId = req.params.studentId; // From auth middleware
+
+      if (!studentId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized: Student ID not found",
+        });
+      }
+
+      // Get all enrolled plans for this student & populate plan details
+      const enrolledPlans = await StudentPlan.find({ studentId })
+        .populate("planId") // Populates Plan details
+        .lean();
+
+      res.json({
+        success: true,
+        message: "Enrollment plans fetched successfully",
+        data: {
+          studentId,
+          plans: enrolledPlans,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching enrollment plans:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch enrollment plans",
+      });
+    }
   }
 
   async createOfflinePayment(req: Request, res: Response) {

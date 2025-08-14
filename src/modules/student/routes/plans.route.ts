@@ -53,17 +53,12 @@ router.get(
 // student routes
 
 router.get(
-  "/enrollments",
+  "/enrollments/:studentId",
   authenticate,
-  requireRole("student"),
+  requireRole("admin","student"),
   (req: Request, res: Response, next: NextFunction) => {
     planController.getEnrollmentPlans(req, res);
 
-    // res.status(501).json({
-    //   status: "error",
-    //   message: "This endpoint is not implemented yet",
-    // });
-    // return;
   }
 );
 

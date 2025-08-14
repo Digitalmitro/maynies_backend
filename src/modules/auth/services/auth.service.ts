@@ -126,7 +126,7 @@ class AuthService {
         password: string,
         ipAddress: string,
         res: Response
-    ): Promise<{ msg: string; data: { name: string; email: string; role: string } }> {
+    ): Promise<{ msg: string; data: {id:string, name: string; email: string; role: string } }> {
         // 1. Find user
         const user = await this.userService.findByEmail(email);
         if (!user) throw new Error('Invalid credentials');
@@ -190,6 +190,7 @@ class AuthService {
         return {
             msg: 'User Logged in successfully',
             data: {
+                id:user?._id?.toString(),
                 name: fullName || '',
                 email: user.email,
                 role: roleName,
@@ -200,7 +201,7 @@ class AuthService {
     }
 
 
-    async verifyOtp(input: VerifyOtpInput, res: Response, req: Request): Promise<{ msg: string; data: { name: string; email: string; role: string } }> {
+    async verifyOtp(input: VerifyOtpInput, res: Response, req: Request): Promise<{ msg: string; data: { id:string,name: string; email: string; role: string } }> {
         // 1. Validate payload
         const { email, otp } = input;
 
@@ -280,6 +281,7 @@ class AuthService {
         return {
             msg: 'User registered successfully',
             data: {
+                id:user?._id?.toString(),
                 name: fullName || '',
                 email: user.email,
                 role: roleName,
