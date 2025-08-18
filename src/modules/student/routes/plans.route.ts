@@ -100,10 +100,10 @@ router.post(
   requireRole("student"),
   validate(createOfflinePaymentSchema),
   (req: Request, res: Response) => {
-    planController.createOfflinePayment(req, res);
+    planController.createOfflnePayment(req, res);
   }
 );
-
+ 
 // router.post('/', authenticate, requireRole('student'), validate(CreateAdmissionSchema), (req, res, next) => { admissionController.createAdmission(req, res, next) });
 
 // router.get('/all', authenticate, requireRole('admin'), (req, res, next) => { admissionController.getAllApplication(req, res, next) });

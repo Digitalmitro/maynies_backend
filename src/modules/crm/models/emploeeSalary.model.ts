@@ -8,7 +8,7 @@ export interface IEmployeeSalary extends Document {
     pay_cycle: "monthly" | "weekly";
     currency?: string;
     effective_from: Date;
-    configured_by: Schema.Types.ObjectId; // Admin ID
+    configured_by?: Schema.Types.ObjectId; // Admin ID
     remarks?: string;
 }
 
@@ -34,7 +34,7 @@ const EmployeeSalarySchema = new Schema<IEmployeeSalary>(
         configured_by: {
             type: Schema.Types.ObjectId,
             ref: "User", // Admin
-            required: true
+            required: false,
         },
 
         remarks: { type: String }

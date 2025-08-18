@@ -466,32 +466,57 @@ class PlanController {
     }
   }
 
-  async createOfflinePayment(req: Request, res: Response) {
-    try {
-      // 1. Validate payload with Zod
-      const parsedData = createOfflinePaymentSchema.parse(req.body);
-      // 2. Create payment record
-      const payment = await Payment.create({
-        ...parsedData,
-        status: "pending", // offline payment = approval needed
-        paymentDate: new Date(),
-      });
+   async createOfflnePayment  (req: Request, res: Response)  {
+  try {
+    // Validate body with Zod
+    const parsedData = createOfflinePaymentSchema.parse(req.body);
 
-      return res.status(201).json({
-        message: "Offline payment request submitted successfully",
-        data: payment,
-      });
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        return res.status(400).json({
-          message: "Validation failed",
-          errors: error.errors,
-        });
-      }
-      console.error("Create Offline Payment Error:", error);
-      return res.status(500).json({ message: "Internal server error" });
+    const { studentId, studentPlanId, amount, currency, installmentNumber, totalInstallments, paymentMethod, transactionId, proofUrl, remarks } = parsedData;
+
+    // Check if student plan exists
+    const studentPlan = await StudentPlan.findById(studentPlanId);
+    if (!studentPlan) {
+      return res.status(404).json({ message: "Student plan not found" });
     }
+
+    // Verify studentId matches plan's studentId
+    if (studentPlan.studentId.toString() !== studentId) {
+      return res.status(400).json({ message: "Student ID does not match the plan" });
+    }
+
+    // Handle installment logic
+    if (studentPlan.chosenMode === "installments") {
+      if (!installmentNumber || !totalInstallments) {
+        return res.status(400).json({ message: "Installment details are required for installment mode" });
+      }
+    }
+
+    // Create payment
+    const payment = await Payment.create({
+      studentId,
+      studentPlanId,
+      amount,
+      currency,
+      installmentNumber: studentPlan.chosenMode === "installments" ? installmentNumber : undefined,
+      totalInstallments: studentPlan.chosenMode === "installments" ? totalInstallments : undefined,
+      paymentMethod,
+      transactionId,
+      proofUrl,
+      status: "pending",
+      remarks,
+    });
+
+    return res.status(201).json({
+      message: "Payment recorded successfully",
+      data: payment,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ message: error.message });
+    }
+    return res.status(500).json({ message: "Internal server error" });
   }
+};
 
   async approveOfflinePayment (req: Request, res: Response) {
   try {

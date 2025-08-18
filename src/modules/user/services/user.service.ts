@@ -55,7 +55,7 @@ export class UserService {
                     bonuses: 0,
                     deductions: 0,
                     pay_cycle: 'monthly',
-                    configured: false,
+                    // configured: false,
                 }], { session });
 
             }
