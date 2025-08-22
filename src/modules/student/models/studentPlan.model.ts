@@ -10,7 +10,7 @@ export interface StudentPlanDocument extends Document {
 
 const studentPlanSchema = new Schema<StudentPlanDocument>(
   {
-    studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true },
+    studentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     planId: { type: Schema.Types.ObjectId, ref: "Plan", required: true },
     chosenMode: { type: String, enum: ["one_time", "installments"], required: true },
     assignedAt: { type: Date, default: Date.now },

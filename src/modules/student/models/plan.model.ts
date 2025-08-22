@@ -9,8 +9,9 @@ export interface PlanDocument extends Document {
   name: string;
   description?: string;
   paymentType: "tuition" | "hostel" | "exam" | string;
-  totalAmount: number;
+  totalAmount: number; // full plan ka amount
   paymentMode: "one_time" | "installments" | "both";
+  oneTimePaymentAmount?: number; // ✅ new field
   installmentCount?: number;
   installmentAmounts?: Installment[];
   lateFeeType?: "fixed" | "percentage";
@@ -32,8 +33,13 @@ const planSchema = new Schema<PlanDocument>(
     paymentType: { type: String, required: true },
     totalAmount: { type: Number, required: true },
     paymentMode: { type: String, enum: ["one_time", "installments", "both"], required: true },
+
+    // ✅ one-time specific
+    oneTimePaymentAmount: { type: Number },
+
     installmentCount: Number,
     installmentAmounts: [installmentSchema],
+
     lateFeeType: { type: String, enum: ["fixed", "percentage"] },
     lateFeeValue: Number,
     startDate: Date,

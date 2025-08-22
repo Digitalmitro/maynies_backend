@@ -6,6 +6,7 @@ import { IUploadedFile } from '../types';
 export enum UploadContext {
     STUDENT_RESUME = 'student_resume',
     STUDENT_DOCUMENT = 'student_document',
+    FORM_RECIEPT = 'form_receipt',
     STUDENT_AVATAR = 'student_avatar',
     EMPLOYER_PROFILE="employer_profile",
     ACADEMIC_CALENDER_PDF = 'acedemic_calender_pdf',

@@ -18,8 +18,7 @@ const EmployeeSalarySchema = new Schema<IEmployeeSalary>(
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
-            unique: true, // Har employee ka ek hi salary config hoga at a time
-            index: true
+            index: true, // bas index rakho, unique hatao
         },
         base_salary: { type: Number, required: true },
         bonuses: { type: Number, default: 0 },
@@ -30,13 +29,12 @@ const EmployeeSalarySchema = new Schema<IEmployeeSalary>(
             default: "monthly"
         },
         currency: { type: String, default: "INR" },
-        effective_from: { type: Date, default: Date.now },
+        effective_from: { type: Date, default: Date.now }, // yeh history track karega
         configured_by: {
             type: Schema.Types.ObjectId,
             ref: "User", // Admin
             required: false,
         },
-
         remarks: { type: String }
     },
     {

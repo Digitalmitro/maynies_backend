@@ -70,6 +70,8 @@ router.patch(
 
 router.patch("/submissions/:id/status", authenticate,
     requireRole("admin"), (req: Request, res: Response) => { formsController.updateSubmissionStatus(req, res) });
+
+    
 // Get all submissions of logged-in employee
 // router.get(
 //     "/submissions",

@@ -53,4 +53,8 @@ router.get("/admin/employees/:id",
 // router.delete("/admin/employees/:id", authorize(["admin"]), EmployeeProfileController.deleteProfileById);
 
 
+
+
+
+
 export default router;

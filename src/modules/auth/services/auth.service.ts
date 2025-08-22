@@ -31,7 +31,6 @@ class AuthService {
     private userService = new UserService();
 
 
-
     async register(payload: IRegisterPayload, req: Request): Promise<IRegisterResult> {
 
         const { name, email, password, role } = payload;

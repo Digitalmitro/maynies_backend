@@ -7,180 +7,97 @@ import { StudentPlan } from "../models/studentPlan.model";
 import { Payment } from "../models/planPayment.model";
 import { createOfflinePaymentSchema } from "../dtos/studentPaymentRequest.dto";
 import mongoose from "mongoose";
+import { CourseEnrollmentModel } from "../../courses/models/courseEnrollment.model";
 
 class PlanController {
   // admin
-  async createPlan(
-    req: Request<{}, {}, CreatePlanDto>,
-    res: Response,
-    next: NextFunction
-  ) {
+
+  async createPlan(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = req.body;
+      const data = req.body; // already validated by zod
 
-      // 1. Start & End Date check
-      if (data.startDate && data.endDate) {
-        const start = new Date(data.startDate);
-        const end = new Date(data.endDate);
-        if (end <= start) {
-          return res.status(400).json({
-            error: "End date must be after start date",
-          });
-        }
-      }
+      const plan = new Plan(data);
+      await plan.save();
 
-      // 2. Payment Mode validations
-      if (data.paymentMode === "installments" || data.paymentMode === "both") {
-        if (data.installmentCount && data.installmentAmounts) {
-          // Count check
-          if (data.installmentAmounts.length !== data.installmentCount) {
-            return res.status(400).json({
-              error: "Installment count and amounts length must match",
-            });
-          }
-
-          // Amount sum check
-          const total = data.installmentAmounts.reduce(
-            (sum, inst) => sum + inst.amount,
-            0
-          );
-          if (total !== data.totalAmount) {
-            return res.status(400).json({
-              error: "Sum of installment amounts must equal totalAmount",
-            });
-          }
-
-          // Positive values check
-          if (data.installmentAmounts.some((i) => i.amount <= 0)) {
-            return res.status(400).json({
-              error: "Installment amounts must be positive",
-            });
-          }
-
-          // Due date ascending check
-          const sortedDates = [...data.installmentAmounts]
-            .map((i) => new Date(i.dueDate))
-            .sort((a, b) => a.getTime() - b.getTime());
-
-          const isSorted = data.installmentAmounts.every(
-            (inst, idx) =>
-              new Date(inst.dueDate).getTime() === sortedDates[idx].getTime()
-          );
-
-          if (!isSorted) {
-            return res.status(400).json({
-              error: "Installment due dates must be in ascending order",
-            });
-          }
-
-          // Check due dates within plan start/end date range (if provided)
-          if (data.startDate && data.endDate) {
-            const start = new Date(data.startDate);
-            const end = new Date(data.endDate);
-
-            const outOfRange = data.installmentAmounts.some((i) => {
-              const due = new Date(i.dueDate);
-              return due < start || due > end;
-            });
-
-            if (outOfRange) {
-              return res.status(400).json({
-                error:
-                  "All installment due dates must fall within the plan's start and end date",
-              });
-            }
-          }
-        } else if (data.paymentMode === "installments") {
-          return res.status(400).json({
-            error:
-              "Installment count and amounts are required when paymentMode is 'installments'",
-          });
-        }
-      }
-
-      // 3. Late Fee validations
-      if (data.lateFeeType) {
-        if (data.lateFeeValue == null) {
-          return res.status(400).json({
-            error: "Late fee value is required when lateFeeType is provided",
-          });
-        }
-        if (
-          data.lateFeeType === "percentage" &&
-          (data.lateFeeValue < 0 || data.lateFeeValue > 100)
-        ) {
-          return res.status(400).json({
-            error: "Late fee percentage must be between 0 and 100",
-          });
-        }
-        if (data.lateFeeType === "fixed" && data.lateFeeValue < 0) {
-          return res.status(400).json({
-            error: "Late fee (fixed) must be a positive number",
-          });
-        }
-      }
-
-      // 4. Total amount sanity check
-      if (data.totalAmount <= 0) {
-        return res.status(400).json({
-          error: "Total amount must be positive",
-        });
-      }
-
-      // ✅ Save to DB
-      const newPlan = await Plan.create(data);
-
-      res.status(201).json({
+      return res.status(201).json({
+        success: true,
         message: "Plan created successfully",
-        plan: newPlan,
+        data: plan,
       });
     } catch (error) {
       next(error);
     }
   }
-  async getPlansForAdmin(req: Request, res: Response, next: NextFunction) {
+
+  async getPlans(req: Request, res: Response, next: NextFunction) {
     try {
-      const {
-        status, // optional: active/inactive
-        search, // optional: search by name
-        page = 1,
-        limit = 10,
-      } = req.query as {
-        status?: string;
-        search?: string;
-        page?: string | number;
-        limit?: string | number;
-      };
+      const { paymentMode, status } = req.query;
 
       const filter: any = {};
-      if (status) filter.status = status;
-      if (search) filter.name = { $regex: search, $options: "i" };
 
-      const skip = (Number(page) - 1) * Number(limit);
+      // ✅ paymentMode filter
+      if (
+        paymentMode &&
+        ["one_time", "installments", "both"].includes(paymentMode as string)
+      ) {
+        filter.paymentMode = paymentMode;
+      }
 
-      const [plans, total] = await Promise.all([
-        Plan.find(filter)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(Number(limit))
-          .lean(),
-        Plan.countDocuments(filter),
-      ]);
+      // ✅ status filter
+      if (status && ["active", "inactive"].includes(status as string)) {
+        filter.status = status;
+      }
+
+      const plans = await Plan.find(filter).sort({ createdAt: -1 });
 
       return res.status(200).json({
         success: true,
+        count: plans.length,
+        filters: filter,
         data: plans,
-        pagination: {
-          total,
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Math.ceil(total / Number(limit)),
-        },
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   }
+
+   async getPlanDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      const plan = await Plan.findById(id);
+
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          message: "Plan not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: plan,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+ async getEnrollmentPlansAdmin(req: Request, res: Response, next: NextFunction) {
+try {
+    const enrollments = await StudentPlan.find()
+      .populate("planId")
+      .populate("studentId");
+
+    return res.json({
+      success: true,
+      data: enrollments,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+  
   //student
   //     async createStudentPlan(
   //     req:Request<{}, {},CreateStudentPlanDto>,
@@ -310,7 +227,7 @@ class PlanController {
       const studentId = caller?.user?._id;
 
       console.log(studentId);
-      
+
       if (!studentId) {
         return res.status(403).json({
           success: false,
@@ -320,7 +237,7 @@ class PlanController {
 
       // Plan aur Student existence check
       const [student, plan] = await Promise.all([
-       StudentProfileModel.findOne({ user_id: studentId }),
+        StudentProfileModel.findOne({ user_id: studentId }),
         Plan.findById(planId).lean(),
       ]);
 
@@ -432,111 +349,195 @@ class PlanController {
       next(err);
     }
   }
-
- async getEnrollmentPlans(req: Request, res: Response) {
+  async enrollmentPlanDetailForStudent(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const studentId = req.params.studentId; // From auth middleware
-
-      if (!studentId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized: Student ID not found",
-        });
-      }
-
-      // Get all enrolled plans for this student & populate plan details
+      const { id } = req.params;
+      const studentId = req.user?.user?._id; // From auth middleware
+      const plan = await Plan.findById(id).lean();
       const enrolledPlans = await StudentPlan.find({ studentId })
         .populate("planId") // Populates Plan details
         .lean();
 
-      res.json({
-        success: true,
-        message: "Enrollment plans fetched successfully",
-        data: {
-          studentId,
-          plans: enrolledPlans,
-        },
+      if (!plan || !enrolledPlans || plan.status !== "active") {
+        return res
+          .status(404)
+          .json({ success: false, error: "Plan not found" });
+      }
+      res.json({ success: true, plan, enrolledPlans });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getEnrollmentPlans(req: Request, res: Response,next: NextFunction) {
+   try {
+    const studentId = req.user?.user?._id; // auth se aayega
+
+    if (!studentId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: Student not found",
+      });
+    }
+
+    const enrollments = await StudentPlan.find({ studentId })
+      .populate("planId")
+      .populate("studentId");
+
+    return res.json({
+      success: true,
+      data: enrollments,
+    });
+  } catch (err) {
+    next(err);
+  }
+  }
+
+  async createOfflnePayment(req: Request, res: Response) {
+    try {
+      // Validate body with Zod
+      const parsedData = createOfflinePaymentSchema.parse(req.body);
+
+      const {
+        studentId,
+        studentPlanId,
+        amount,
+        currency,
+        installmentNumber,
+        totalInstallments,
+        paymentMethod,
+        transactionId,
+        proofUrl,
+        remarks,
+      } = parsedData;
+
+      // Check if student plan exists
+      const studentPlan = await StudentPlan.findById(studentPlanId);
+      if (!studentPlan) {
+        return res.status(404).json({ message: "Student plan not found" });
+      }
+
+      // Verify studentId matches plan's studentId
+      if (studentPlan.studentId.toString() !== studentId) {
+        return res
+          .status(400)
+          .json({ message: "Student ID does not match the plan" });
+      }
+
+      // Handle installment logic
+      if (studentPlan.chosenMode === "installments") {
+        if (!installmentNumber || !totalInstallments) {
+          return res.status(400).json({
+            message: "Installment details are required for installment mode",
+          });
+        }
+      }
+
+      // Create payment
+      const payment = await Payment.create({
+        studentId,
+        studentPlanId,
+        amount,
+        currency,
+        installmentNumber:
+          studentPlan.chosenMode === "installments"
+            ? installmentNumber
+            : undefined,
+        totalInstallments:
+          studentPlan.chosenMode === "installments"
+            ? totalInstallments
+            : undefined,
+        paymentMethod,
+        transactionId,
+        proofUrl,
+        status: "pending",
+        remarks,
+      });
+
+      return res.status(201).json({
+        message: "Payment recorded successfully",
+        data: payment,
       });
     } catch (error) {
-      console.error("Error fetching enrollment plans:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch enrollment plans",
-      });
-    }
-  }
-
-   async createOfflnePayment  (req: Request, res: Response)  {
-  try {
-    // Validate body with Zod
-    const parsedData = createOfflinePaymentSchema.parse(req.body);
-
-    const { studentId, studentPlanId, amount, currency, installmentNumber, totalInstallments, paymentMethod, transactionId, proofUrl, remarks } = parsedData;
-
-    // Check if student plan exists
-    const studentPlan = await StudentPlan.findById(studentPlanId);
-    if (!studentPlan) {
-      return res.status(404).json({ message: "Student plan not found" });
-    }
-
-    // Verify studentId matches plan's studentId
-    if (studentPlan.studentId.toString() !== studentId) {
-      return res.status(400).json({ message: "Student ID does not match the plan" });
-    }
-
-    // Handle installment logic
-    if (studentPlan.chosenMode === "installments") {
-      if (!installmentNumber || !totalInstallments) {
-        return res.status(400).json({ message: "Installment details are required for installment mode" });
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: "Internal server error" });
     }
-
-    // Create payment
-    const payment = await Payment.create({
-      studentId,
-      studentPlanId,
-      amount,
-      currency,
-      installmentNumber: studentPlan.chosenMode === "installments" ? installmentNumber : undefined,
-      totalInstallments: studentPlan.chosenMode === "installments" ? totalInstallments : undefined,
-      paymentMethod,
-      transactionId,
-      proofUrl,
-      status: "pending",
-      remarks,
-    });
-
-    return res.status(201).json({
-      message: "Payment recorded successfully",
-      data: payment,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      return res.status(400).json({ message: error.message });
-    }
-    return res.status(500).json({ message: "Internal server error" });
   }
-};
 
-  async approveOfflinePayment (req: Request, res: Response) {
-  try {
-    const { paymentId } = req.params;
-    const payment = await Payment.findByIdAndUpdate(
-      paymentId,
-      { status: "approved", approvedAt: new Date() },
-      { new: true }
-    );
+  async getAllRequests(req: Request, res: Response) {
+    try {
+      const { status } = req.query;
 
-    if (!payment) {
-      return res.status(404).json({ success: false, message: "Payment not found" });
+      const filter: any = {};
+      if (
+        status &&
+        ["pending", "approved", "rejected"].includes(status as string)
+      ) {
+        filter.status = status;
+      }
+
+      const payments = await Payment.find(filter)
+        .populate("studentId", "name email") // sirf kuch fields
+        .populate("studentPlanId", "planId chosenMode status")
+        .sort({ createdAt: -1 });
+
+      return res.json({
+        message: "Payments fetched successfully",
+        count: payments.length,
+        data: payments,
+      });
+    } catch (err: any) {
+      return res
+        .status(500)
+        .json({ message: err.message || "Internal server error" });
     }
-
-    res.json({ success: true, data: payment });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
   }
-};
 
+  async updatePaymentRequestStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // payment request id
+      const { status, remarks } = req.body;
+
+      if (!["approved", "rejected", "pending"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+
+      const paymentRequest = await Payment.findById(id);
+      if (!paymentRequest) {
+        return res.status(404).json({ message: "Payment request not found" });
+      }
+
+      // update payment request
+      paymentRequest.status = status;
+      if (remarks) {
+        paymentRequest.remarks = remarks;
+      }
+      await paymentRequest.save();
+
+      // agar approve hai toh studentPlan complete kardo
+      if (status === "approved") {
+        await StudentPlan.findByIdAndUpdate(
+          paymentRequest.studentPlanId, // assume Payment me studentPlanId stored hai
+          { status: "completed" },
+          { new: true }
+        );
+      }
+
+      return res.status(200).json({
+        message: `Payment request ${status} successfully`,
+        data: paymentRequest,
+      });
+    } catch (error) {
+      console.error("Error updating payment request:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
 }
 
 export const planController = new PlanController();

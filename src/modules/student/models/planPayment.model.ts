@@ -19,7 +19,7 @@ export interface PaymentDocument extends Document {
 
 const paymentSchema = new Schema<PaymentDocument>(
   {
-    studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true }, // NEW
+    studentId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // NEW
     studentPlanId: { type: Schema.Types.ObjectId, ref: "StudentPlan", required: true },
     amount: { type: Number, required: true, min: 1 },
     currency: { type: String, default: "INR" }, // NEW

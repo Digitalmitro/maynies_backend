@@ -1,101 +1,105 @@
 // src/app.ts
-import express, { Request, Response } from 'express';
-import cookieParser from 'cookie-parser';
-import { connectDB } from './shared/database/connect';
-import authRoutes from './modules/auth/routes/auth.route';
-import userRoutes from './modules/user/routes/user.route';
-import jobRoutes from './modules/job/routes/job.route';
-import crmRoutes from './modules/crm/routes/crm.routes';
-import studentRoutes from './modules/student/routes/student.route';
-import uploadRoutes from './modules/upload/routes/upload.route';
-import courseRoutes from './modules/courses/routes/course.route';
-import paymentRoutes from './modules/courses/routes/coursePayment.route';
-import { seedRoles } from './scripts/seedRoles';
-import { errorHandler } from './shared/middleware/errorMiddleWare';
-import cors from 'cors';
-import path from 'path';
-import { stripeWebhook } from './modules/courses/controllers/payment.controller';
-import { env } from './config/env';
-
-
-
-
+import express, { Request, Response } from "express";
+import cookieParser from "cookie-parser";
+import { connectDB } from "./shared/database/connect";
+import authRoutes from "./modules/auth/routes/auth.route";
+import userRoutes from "./modules/user/routes/user.route";
+import jobRoutes from "./modules/job/routes/job.route";
+import crmRoutes from "./modules/crm/routes/crm.routes";
+import studentRoutes from "./modules/student/routes/student.route";
+import uploadRoutes from "./modules/upload/routes/upload.route";
+import courseRoutes from "./modules/courses/routes/course.route";
+import paymentRoutes from "./modules/courses/routes/coursePayment.route";
+import { seedRoles } from "./scripts/seedRoles";
+import { errorHandler } from "./shared/middleware/errorMiddleWare";
+import cors from "cors";
+import path from "path";
+import { stripeWebhook } from "./modules/courses/controllers/payment.controller";
+import { env } from "./config/env";
+import { startAttendanceAutoCheckoutJob } from "./modules/crm/jobs/attendeceAutoCheckout";
 
 async function start() {
+  // 1) DB connect
+  await connectDB();
+  await seedRoles();
 
-    // 1) DB connect
-    await connectDB();
-    await seedRoles();
+  //jobs
+  startAttendanceAutoCheckoutJob();
+  // 2) Express init
+  const app = express();
 
-    // 2) Express init
-    const app = express();
+  app.set("trust proxy", true);
 
-    app.set('trust proxy', true);
+  // app.use(cors({"*"}));
 
+  const allowedOrigins = [
+    process.env.LOCAL_SITE_ORIGIN,
+    process.env.DEV_SITE_ORIGIN,
+    process.env.LOCAL_ADMIN_ORIGIN,
+    process.env.DEV_ADMIN_ORIGIN,
+  ].filter(Boolean);
 
-    // app.use(cors({"*"}));
+  // CORS middleware with dynamic origin checking
+  app.use(
+    cors({
+      origin: (incomingOrigin, callback) => {
+        if (!incomingOrigin) return callback(null, true);
+        if (allowedOrigins.includes(incomingOrigin)) {
+          return callback(null, true);
+        }
+        // silently reject
+        return callback(null, false);
+      },
+      credentials: true, // if you need cookies/auth
+      optionsSuccessStatus: 200, // for legacy browsers
+    })
+  );
 
+  app.use(
+    "/api/payment/webhook",
+    express.raw({ type: "application/json" }),
+    (req: Request, res: Response) => {
+      stripeWebhook(req, res);
+    }
+  );
 
-    const allowedOrigins = [
-        process.env.LOCAL_SITE_ORIGIN,
-        process.env.DEV_SITE_ORIGIN,
-        process.env.LOCAL_ADMIN_ORIGIN,
-        process.env.DEV_ADMIN_ORIGIN,
-    ].filter(Boolean);
+  app.use(express.json());
+  app.use(cookieParser());
 
-    // CORS middleware with dynamic origin checking
-    app.use(cors({
-        origin: (incomingOrigin, callback) => {
-            if (!incomingOrigin) return callback(null, true);
-            if (allowedOrigins.includes(incomingOrigin)) {
-                return callback(null, true);
-            }
-            // silently reject
-            return callback(null, false);
-        },
-        credentials: true,             // if you need cookies/auth
-        optionsSuccessStatus: 200,     // for legacy browsers
-    }));
+  app.use(
+    "/api/uploads",
+    express.static(path.join(__dirname, "../uploads"), {
+      index: false,
+    })
+  );
 
+  // 3) Simple health-check route
+  app.use("/api/auth", authRoutes);
+  app.use("/api/user", userRoutes);
+  app.use("/api/jobs", jobRoutes);
+  app.use("/api/employer", crmRoutes);
+  app.use("/api/student", studentRoutes);
+  app.use("/api/courses", courseRoutes);
+  app.use("/api/payment", paymentRoutes);
+  app.use("/api/upload", uploadRoutes);
 
-    app.use('/api/payment/webhook', express.raw({ type: 'application/json' }), (req: Request, res: Response) => { stripeWebhook(req, res) });
+  app.get("/health", (req: Request, res: Response) => {
+    res.status(200).json({ status: "OK", message: "Server is healthy!" });
+  });
 
-    app.use(express.json());
-    app.use(cookieParser());
-
-    app.use('/api/uploads', express.static(path.join(__dirname, '../uploads'), {
-        index: false
-    }));
-
-
-    // 3) Simple health-check route
-    app.use('/api/auth', authRoutes);
-    app.use('/api/user', userRoutes);
-    app.use('/api/jobs', jobRoutes);
-    app.use('/api/employer', crmRoutes);
-    app.use('/api/student', studentRoutes);
-    app.use('/api/courses', courseRoutes);
-    app.use('/api/payment', paymentRoutes);
-    app.use('/api/upload', uploadRoutes);
-
-    app.get('/health', (req: Request, res: Response) => {
-        res.status(200).json({ status: 'OK', message: 'Server is healthy!' });
+  app.use((req, res, next) => {
+    res.status(404).json({
+      status: "error",
+      message: "Route not found",
     });
+  });
 
-    app.use((req, res, next) => {
-        res.status(404).json({
-            status: 'error',
-            message: 'Route not found'
-        });
-    });
+  app.use(errorHandler); // always at the end
 
-    app.use(errorHandler); // always at the end
-
-
-    const PORT = process.env.PORT || 4000;
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
 }
 
 start();
