@@ -9,10 +9,12 @@ import { authenticate } from "../../auth/middleware/auth.middleware";
 import { requireRole } from "../../../shared/middleware/roleBasedMiddleware";
 import { UpdateAdmissionStatusSchema } from "../dtos/updateAdmissionStatus.dto";
 import { planController } from "../controllers/plans.controller";
-import { CreatePlanDto, CreatePlanSchema } from "../dtos/createPlan.dto";
+import {  CreatePlanSchema } from "../dtos/createPlan.dto";
 import { ZodSchema } from "zod";
 import { CreateStudentPlanSchema } from "../dtos/studentEnrollPlan.dto";
 import { createOfflinePaymentSchema } from "../dtos/studentPaymentRequest.dto";
+import { GetPlansQueryDTO } from "../dtos/getPlan.dto";
+import { updatePlanSchema } from "../dtos/updatePlan.dto";
 
 const router = Router();
 // Protect all routes: only students
@@ -25,9 +27,9 @@ router.post(
   "/admin",
   authenticate,
   requireRole("admin"),
-  validate(CreatePlanSchema as unknown as ZodSchema<CreatePlanDto>),
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.createPlan(req, res, next);
+  validate(CreatePlanSchema),
+  (req: Request, res: Response) => {
+    planController.createPlan(req, res);
   }
 );
 
@@ -35,62 +37,107 @@ router.get(
   "/admin",
   authenticate,
   requireRole("admin"), // Only admin role can access
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.getPlans(req, res, next);
+  validate(GetPlansQueryDTO as any, "query"),
+  (req: Request, res: Response) => {
+    planController.getPlans(req, res);
   }
 );
 
 router.get(
   "/admin/:id",
-  authenticate,
-  requireRole("admin"), // Only admin role can access
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.getPlanDetail(req, res, next);
-  }
-);
-router.get(
-  "/admin/enrollments",
-  authenticate,
-  requireRole("admin"), // Only admin role can access
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.getEnrollmentPlansAdmin(req, res, next);
-  }
-);
-router.get(
-  "/admin/:id",
-  authenticate,
-  requireRole("admin"), // Only admin role can access
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.getPlanDetail(req, res, next);
-  }
-);
-
-router.get(
-  "/admin/requests",
   authenticate,
   requireRole("admin"), // Only admin role can access
   (req: Request, res: Response) => {
-    planController.getAllRequests(req, res);
+    planController.getPlanDetailById(req, res);
   }
 );
+
 router.put(
-  "/admin/requests/:id",
+  "/admin/:id",
   authenticate,
   requireRole("admin"), // Only admin role can access
+  validate(updatePlanSchema),
   (req: Request, res: Response) => {
-    planController.updatePaymentRequestStatus(req, res);
+    planController.updatePlan(req, res);
   }
 );
 
-// student routes
-router.get(
-  "/enrollments/:studentId",
+router.delete(
+  "/admin/:id",
   authenticate,
-  requireRole("admin", "student"),
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.getEnrollmentPlans(req, res, next);
+  requireRole("admin"), // Only admin role can access
+  (req: Request, res: Response) => {
+    planController.deletePlan(req, res);
   }
 );
+
+router.get(
+  "/admin/enrollments/:planId",
+  authenticate,
+  requireRole("admin"), // Only admin role can access
+  (req: Request, res: Response) => {
+    planController.getEnrollmentsByPlanId(req, res);
+  }
+);
+
+router.patch(
+  "/admin/enrollments/:id/status",
+  authenticate,
+  requireRole("admin"), // Only admin role can access
+  (req: Request, res: Response) => {
+    planController.updateEnrollmentStatus(req, res);
+  }
+);
+
+
+
+
+
+
+// router.get(
+//   "/admin/:id",
+//   authenticate,
+//   requireRole("admin"), // Only admin role can access
+//   (req: Request, res: Response, next: NextFunction) => {
+//     planController.getPlanDetail(req, res, next);
+//   }
+// );
+
+router.post(
+  "/enroll",
+  authenticate,
+  requireRole("student"), // Only admin role can access
+  (req: Request, res: Response) => {
+    planController.studentEnrollPlan(req, res);
+  }
+);
+
+// router.get(
+//   "/admin/requests",
+//   authenticate,
+//   requireRole("admin"), // Only admin role can access
+//   (req: Request, res: Response) => {
+//     planController.getAllRequests(req, res);
+//   }
+// );
+// router.put(
+//   "/admin/requests/:id",
+//   authenticate,
+//   requireRole("admin"), // Only admin role can access
+//   (req: Request, res: Response) => {
+//     planController.updatePaymentRequestStatus(req, res);
+//   }
+// );
+
+// // student routes
+// router.get(
+//   "/enrollments/:studentId",
+//   authenticate,
+//   requireRole("admin", "student"),
+//   (req: Request, res: Response, next: NextFunction) => {
+//     planController.getEnrollmentPlans(req, res, next);
+//   }
+// );
 
 router.get(
   "/",
@@ -101,6 +148,7 @@ router.get(
     planController.getPlansForStudent(req, res, next);
   }
 );
+
 router.get(
   "/:id",
   authenticate,
@@ -110,35 +158,36 @@ router.get(
     planController.planDetailForStudent(req, res, next);
   }
 );
-router.get(
-  "/planenrollments/:id",
-  authenticate,
-  requireRole("student"),
-  // validate(CreateStudentPlanSchema),
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.enrollmentPlanDetailForStudent(req, res, next);
-  }
-);
 
-router.post(
-  "/",
-  authenticate,
-  requireRole("student"),
-  validate(CreateStudentPlanSchema),
-  (req: Request, res: Response, next: NextFunction) => {
-    planController.createStudentPlan(req, res, next);
-  }
-);
+// router.get(
+//   "/planenrollments/:id",
+//   authenticate,
+//   requireRole("student"),
+//   // validate(CreateStudentPlanSchema),
+//   (req: Request, res: Response, next: NextFunction) => {
+//     planController.enrollmentPlanDetailForStudent(req, res, next);
+//   }
+// );
 
-router.post(
-  "/payment/offline",
-  authenticate,
-  requireRole("student"),
-  validate(createOfflinePaymentSchema),
-  (req: Request, res: Response) => {
-    planController.createOfflnePayment(req, res);
-  }
-);
+// router.post(
+//   "/",
+//   authenticate,
+//   requireRole("student"),
+//   validate(CreateStudentPlanSchema),
+//   (req: Request, res: Response, next: NextFunction) => {
+//     planController.createStudentPlan(req, res, next);
+//   }
+// );
+
+// router.post(
+//   "/payment/offline",
+//   authenticate,
+//   requireRole("student"),
+//   validate(createOfflinePaymentSchema),
+//   (req: Request, res: Response) => {
+//     planController.createOfflnePayment(req, res);
+//   }
+// );
 
 // router.post('/', authenticate, requireRole('student'), validate(CreateAdmissionSchema), (req, res, next) => { admissionController.createAdmission(req, res, next) });
 

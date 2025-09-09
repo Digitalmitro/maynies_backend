@@ -1,47 +1,50 @@
 import { Schema, model, Document, Types } from "mongoose";
 
-export interface PaymentDocument extends Document {
-  studentId: Types.ObjectId; // NEW
-  studentPlanId: Types.ObjectId;
+interface PaymentInstallment {
+  installmentNo: number;
   amount: number;
-  currency?: string; // NEW - default INR
-  installmentNumber?: number;
-  totalInstallments?: number; // NEW
-  paymentDate: Date;
-  paymentMethod: "cash" | "bank_transfer" | "upi" | "stripe" | "razorpay";
-  transactionId?: string;
-  proofUrl?: string;
-  status: "pending" | "approved" | "rejected";
-  approvedAt?: Date; // NEW
-  rejectedAt?: Date; // NEW
-  remarks?: string;
+  dueDate: Date;
+  isPaid: boolean;
+  status: "pending" | "requested" | "approved" | "rejected";
+  paidAt?: Date | null;
 }
 
-const paymentSchema = new Schema<PaymentDocument>(
+export interface StudentPlanPaymentDocument extends Document {
+  enrollmentId: Types.ObjectId;   // ref: StudentPlanEnrollment
+  payments: PaymentInstallment[];
+  overallStatus: "incomplete" | "completed";
+}
+
+const paymentInstallmentSchema = new Schema<PaymentInstallment>(
   {
-    studentId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // NEW
-    studentPlanId: { type: Schema.Types.ObjectId, ref: "StudentPlan", required: true },
-    amount: { type: Number, required: true, min: 1 },
-    currency: { type: String, default: "INR" }, // NEW
-    installmentNumber: { type: Number },
-    totalInstallments: { type: Number },
-    paymentDate: { type: Date, default: Date.now },
-    paymentMethod: { 
-      type: String, 
-      enum: ["cash", "bank_transfer", "upi", "stripe", "razorpay"], 
-      required: true,
-      default: "cash"
+    installmentNo: { type: Number, required: true },
+    amount: { type: Number, required: true },
+    dueDate: { type: Date, required: true },
+    isPaid: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ["pending", "requested", "approved", "rejected"],
+      default: "pending"
     },
-    transactionId: { type: String },
-    proofUrl: { type: String },
-    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
-    approvedAt: { type: Date },
-    rejectedAt: { type: Date },
-    remarks: { type: String }
+    paidAt: { type: Date, default: null }
+  },
+  { _id: false }
+);
+
+const studentPlanPaymentSchema = new Schema<StudentPlanPaymentDocument>(
+  {
+    enrollmentId: { type: Schema.Types.ObjectId, ref: "StudentPlanEnrollment", required: true },
+    payments: { type: [paymentInstallmentSchema], required: true },
+    overallStatus: {
+      type: String,
+      enum: ["incomplete", "completed"],
+      default: "incomplete"
+    }
   },
   { timestamps: true }
 );
 
-paymentSchema.index({ studentId: 1, studentPlanId: 1, status: 1 });
-
-export const Payment = model<PaymentDocument>("Payment", paymentSchema);
+export const StudentPlanPayment = model<StudentPlanPaymentDocument>(
+  "StudentPlanPayment",
+  studentPlanPaymentSchema
+);

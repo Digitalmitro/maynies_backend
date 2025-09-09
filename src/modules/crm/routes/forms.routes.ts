@@ -21,7 +21,9 @@ router.get(
   "/templates",
   authenticate,
   requireRole("employer", "admin"),
-  formsController.getFormTemplatesList
+  (req: Request, res: Response) => {
+    formsController.getFormTemplatesList(req, res);
+  }
 );
 
 router.get(
@@ -38,7 +40,7 @@ router.get(
   authenticate,
   requireRole("employer"),
   (req: Request, res: Response) => {
-    formsController.submissionsDetail(req, res);
+    formsController.getSubmissionById(req, res);
   }
 );
 
@@ -46,7 +48,9 @@ router.get(
   "/template/:id",
   authenticate,
   requireRole("employer", "admin"),
-  formsController.getFormTemplateById
+  (req: Request, res: Response) => {
+    formsController.getFormTemplateById(req, res);
+  }
 );
 
 // Get a single form definition
@@ -59,29 +63,37 @@ router.get(
 
 // Submit a new form
 router.post(
-  "/submit",
+  "/form-template/:id",
   authenticate,
   requireRole("employer"),
   (req: Request, res: Response) => {
-    formsController.submitForm(req, res);
+    formsController.createFormSubmission(req, res);
   }
 );
 
 router.patch(
-  "/submit/:id",
+  "/form-template/:id",
   authenticate,
   requireRole("employer"),
   (req: Request, res: Response) => {
     formsController.updateFormSubmission(req, res);
   }
 );
+router.delete(
+  "/form-template/:id",
+  authenticate,
+  requireRole("employer"),
+  (req: Request, res: Response) => {
+    formsController.deleteSubmissionForm(req, res);
+  }
+);
 
 router.patch(
-  "/submissions/:id/status",
+  "/form-submission/:id/status",
   authenticate,
   requireRole("admin"),
   (req: Request, res: Response) => {
-    formsController.updateSubmissionStatus(req, res);
+    formsController.updateFormSubmissionStatus(req, res);
   }
 );
 
@@ -137,15 +149,29 @@ router.put(
   "/template/:id",
   authenticate,
   requireRole("admin"),
-  formsController.updateFormTemplate
+  (req: Request, res: Response) => {
+  formsController.updateFormTemplate(req, res);
+  }
 );
 
 router.delete(
   "/template/:id",
   authenticate,
   requireRole("admin"),
-  formsController.deleteFormTemplate
+  (req: Request, res: Response) => {
+  formsController.deleteFormTemplate(req, res);
+  }
 );
+
+router.get(
+  "/form-submissions/:templateId",
+  authenticate,
+  requireRole("admin"),
+  (req: Request, res: Response) => {
+  formsController.getSubmissionsByTemplate(req, res);
+  }
+);
+
 
 // Update a form template
 // router.put(

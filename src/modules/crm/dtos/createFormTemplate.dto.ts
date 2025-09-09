@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // Field schema for form template
 export const formFieldSchema = z.object({
+  id:z.string().min(1, "Field ID is required"),
   name: z.string().min(1, "Field name is required"),
   label: z.string().min(1, "Label is required"),
   type: z.enum([
@@ -31,8 +32,6 @@ export const formFieldSchema = z.object({
 export const createFormTemplateSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  allowedRoles: z.array(z.string()).nonempty("At least one role is required"),
-  allowedDepartments: z.array(z.string()).optional(),
   fields: z.array(formFieldSchema).nonempty("At least one field is required"),
   isActive: z.boolean().optional()
 });

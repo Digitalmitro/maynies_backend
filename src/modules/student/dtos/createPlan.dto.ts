@@ -1,50 +1,27 @@
 import { z } from "zod";
 
-const installmentSchema = z.object({
-  amount: z.number().positive(),
-  dueDate: z.string().transform((val) => new Date(val)), // convert string -> Date
+// Installment schema
+const InstallmentSchema = z.object({
+  amount: z
+    .number({ invalid_type_error: "Amount must be a number" })
+    .positive("Amount must be greater than 0"),
+  dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: "Invalid dueDate",
+  }),
 });
 
+// Create Plan DTO
 export const CreatePlanSchema = z.object({
-  name: z.string().min(3),
+  name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  paymentType: z.enum(["tuition", "hostel", "exam"]).or(z.string()), // allow custom types also
-  totalAmount: z.number().positive(),
-
+  paymentType: z
+    .union([z.literal("tuition"), z.literal("hostel"), z.literal("exam"), z.string()]),
+    // .min(1, "Payment type required"),
+  totalAmount: z.number({ invalid_type_error: "totalAmount must be a number" }).positive(),
   paymentMode: z.enum(["one_time", "installments", "both"]),
-
-  oneTimePaymentAmount: z.number().positive().nullable().optional(),
-
-  installmentCount: z.number().int().nonnegative().optional(),
-  installmentAmounts: z.array(installmentSchema).optional(),
-
-  lateFeeType: z.enum(["fixed", "percentage"]).optional(),
-  lateFeeValue: z.number().positive().optional(),
-
-  startDate: z.string().transform((val) => new Date(val)).optional(),
-  endDate: z.string().transform((val) => new Date(val)).optional(),
-
   status: z.enum(["active", "inactive"]).default("active"),
-}).refine((data) => {
-  if (data.paymentMode === "one_time") {
-    return !!data.oneTimePaymentAmount && data.oneTimePaymentAmount > 0;
-  }
-  return true;
-}, { message: "oneTimePaymentAmount is required for one_time mode" })
-.refine((data) => {
-  if (data.paymentMode === "installments") {
-    return !!data.installmentCount && data.installmentCount > 0 && !!data.installmentAmounts?.length;
-  }
-  return true;
-}, { message: "installmentCount and installmentAmounts required for installments mode" })
-.refine((data) => {
-  if (data.paymentMode === "both") {
-    return !!data.oneTimePaymentAmount && data.oneTimePaymentAmount > 0
-      && !!data.installmentCount && data.installmentCount > 0
-      && !!data.installmentAmounts?.length;
-  }
-  return true;
-}, { message: "For both mode, oneTimePaymentAmount + installments required" });
+  installments: z.array(InstallmentSchema).optional(),
+});
 
 
-export type CreatePlanDto = z.infer<typeof CreatePlanSchema>;
+export type CreatePlanDTO = z.infer<typeof CreatePlanSchema>;
